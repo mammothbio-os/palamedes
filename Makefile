@@ -11,10 +11,8 @@ test:
 	--cov palamedes
 
 lint: 
-	isort --profile black --check-only palamedes/ tests/
-	flake8 palamedes/ tests/
-	black --check --skip-string-normalization --line-length 120 palamedes/ tests/
+	ruff check palamedes/ tests/
+	mypy palamedes/ tests/
 
 clean:
-	isort --profile black palamedes/ tests/
-	black --skip-string-normalization --line-length 120 palamedes/ tests/
+	ruff format palamedes/ tests/
