@@ -7,7 +7,7 @@ from palamedes.utils import configure_logging
 
 class ConfigureLoggingTests(TestCase):
     def setUp(self):
-        self.logging_patch = patch('palamedes.utils.logging')
+        self.logging_patch = patch("palamedes.utils.logging")
         self.logging_mock = self.logging_patch.start()
         self.addCleanup(self.logging_patch.stop)
 
