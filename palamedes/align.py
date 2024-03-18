@@ -36,11 +36,20 @@ class Block(NamedTuple):
     @classmethod
     def collapse(cls, blocks: List["Block"]) -> "Block":
         """
-        Given a variable length list of blocks, collapse all blocks into one or return None if the list was empty
+        Given a variable length list of blocks, collapse all blocks into one or raise a ValueError if the list is empty.
+        Blocks will be sorted but must be adjacent to each-other.
         """
-        new_start = blocks[0].start
-        new_end = blocks[-1].end
-        new_bases = "".join([block.bases for block in blocks])
+        if len(blocks) == 0:
+            raise ValueError("Cannot collapse empty list of Blocks")
+
+        sorted_blocks = sorted(blocks)
+        for idx, block in enumerate(sorted_blocks[:-1]):
+            if sorted_blocks[idx + 1].start != block.end:
+                raise ValueError(f"Cannot collapse Blocks, they must be adjacent. Blocks {idx} and {idx + 1} are not!")
+
+        new_start = sorted_blocks[0].start
+        new_end = sorted_blocks[-1].end
+        new_bases = "".join([block.bases for block in sorted_blocks])
         return Block(new_start, new_end, new_bases)
 
 
