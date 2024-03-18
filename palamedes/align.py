@@ -1,6 +1,6 @@
 import logging
 from functools import reduce
-from typing import List, NamedTuple, Optional, Union
+from typing import List, Optional, Union
 
 from Bio.Align import Alignment, PairwiseAligner
 from Bio.Seq import Seq
@@ -20,58 +20,9 @@ from palamedes.config import (
     VARIANT_BASE_MATCH,
     VARIANT_BASE_MISMATCH,
 )
+from palamedes.models import Block, VariantBlock
 
 LOGGER = logging.getLogger(__name__)
-
-
-class Block(NamedTuple):
-    """
-    General purpose block for slices of the alignment. Note (start, end) should be ZBHO
-    """
-
-    start: int
-    end: int
-    bases: str
-
-    @classmethod
-    def collapse(cls, blocks: List["Block"]) -> "Block":
-        """
-        Given a variable length list of blocks, collapse all blocks into one or raise a ValueError if the list is empty.
-        Blocks will be sorted but must be adjacent to each-other.
-        """
-        if len(blocks) == 0:
-            raise ValueError("Cannot collapse empty list of Blocks")
-
-        sorted_blocks = sorted(blocks)
-        for idx, block in enumerate(sorted_blocks[:-1]):
-            if sorted_blocks[idx + 1].start != block.end:
-                raise ValueError(f"Cannot collapse Blocks, they must be adjacent. Blocks {idx} and {idx + 1} are not!")
-
-        new_start = sorted_blocks[0].start
-        new_end = sorted_blocks[-1].end
-        new_bases = "".join([block.bases for block in sorted_blocks])
-        return Block(new_start, new_end, new_bases)
-
-
-class VariantBlock(NamedTuple):
-    """
-    Internal representation of a slice of an alignment, based on a contiguous
-    run of positions that are not matches. The object tracks the start and
-    end positions from each sequence which are covered by the block, as well
-    as the bases. It also tracks the start and end of the block within the
-    alignment and the "variant bases", which is similar to a CIGAR string
-    but without the short-hand notation.
-
-    Note that:
-    - reference_blocks and alternate_blocks store Block objects corresponding to the block from either
-      sequence in the alignment. The list should have 0 or 1 elements. The 0 is if no part of the sequence
-      is included in the alignment (like an insertion upstream of the first base).
-    - Alignment block will always be set, and should have a sequence with the VARIANT_BASE characters
-    """
-
-    alignment_block: Block
-    reference_blocks: List[Block]
-    alternate_blocks: List[Block]
 
 
 def make_variant_base(ref_base: str, alt_base: str) -> str:
@@ -150,7 +101,36 @@ def generate_alignment(
     By default the function creates an aligner object using the defaults, but the caller may provide their
     own pre-configured aligner. This aligner must be set to 'global' mode.
 
-    A warning is generated if a tie is detected between the 1st and 2nd best alignments.
+    Note that it is possible for multiple alignments to be returned with the same max score. Synthetic testing
+    has shown that generally the highest scoring alignments are returned in "left to right" order. Take the
+    following example, which was for testing HGVS duplications. This was the "intended" alignment:
+
+        ATC---GGGGGGGG
+        ATCATCGGGGGGGG
+
+    However, there are multiple ways to get a three base insertion, all with the same score:
+        ipdb> for aln in aligner.align('ATCGGGGGGGG', 'ATCATCGGGGGGGG'):
+        print(aln)
+
+        target            0 ---ATCGGGGGGGG 11
+                          0 ---||||||||||| 14
+        query             0 ATCATCGGGGGGGG 14
+
+        target            0 A---TCGGGGGGGG 11
+                          0 |---|||||||||| 14
+        query             0 ATCATCGGGGGGGG 14
+
+        target            0 AT---CGGGGGGGG 11
+                          0 ||---||||||||| 14
+        query             0 ATCATCGGGGGGGG 14
+
+        target            0 ATC---GGGGGGGG 11
+                          0 |||---|||||||| 14
+        query             0 ATCATCGGGGGGGG 14
+
+    Due to the HGVS rule of always indicating that the 3' most base is considered the modified one, a best effort
+    attempt is made to return the most "right aligned" alignment, by returning the last alignment with the highest
+    score. This way not yield the ideal results in more complicated cases.
     """
     if aligner is not None:
         if aligner.mode != GLOBAL_ALIGN_MODE:
@@ -177,13 +157,12 @@ def generate_alignment(
 
     alignments = aligner.align(ref_seq_obj, alt_seq_obj)
     best_alignment = next(alignments)
+    best_alignment_score = best_alignment.score
 
-    try:
-        next_alignnment = next(alignments)
-        if best_alignment.score == next_alignnment.score:
-            LOGGER.warning("Tie detected between best and second best alignment!")
-    except StopIteration:
-        pass
+    other_alignments_with_best = [alignment for alignment in alignments if alignment.score == best_alignment_score]
+    if len(other_alignments_with_best) > 0:
+        LOGGER.warning("Multiple alignments found with max score, returning last in the list (3' end rule)")
+        best_alignment = other_alignments_with_best[-1]
 
     return best_alignment
 
