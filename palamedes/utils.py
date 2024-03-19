@@ -43,7 +43,8 @@ def yield_repeating_substrings(input_string: str) -> Iterable[str]:
     """
     input_len = len(input_string)
     idx = 0
-    while idx * 2 < input_len:
+
+    while ((idx + 1) * 2) <= input_len:
         substr_for_idx = input_string[0 : idx + 1]
         quotient, remainder = divmod(input_len, len(substr_for_idx))
         if remainder == 0 and substr_for_idx * quotient == input_string:
