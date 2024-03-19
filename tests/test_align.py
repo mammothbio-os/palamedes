@@ -5,8 +5,6 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
 from palamedes.align import (
-    VariantBlock,
-    Block,
     generate_alignment,
     make_variant_base,
     can_merge_variant_blocks,
@@ -23,6 +21,7 @@ from palamedes.config import (
     VARIANT_BASE_DELETION,
     VARIANT_BASE_MISMATCH,
 )
+from palamedes.models import VariantBlock, Block
 
 
 class BlockTestCase(TestCase):
