@@ -32,7 +32,7 @@ def main() -> None:
     variant_blocks = generate_variant_blocks(alignment)
     LOGGER.info("%s Variant blocks generated", len(variant_blocks))
     for variant_block in variant_blocks:
-        category = categorize_variant_block(alignment, variant_block)
+        category = categorize_variant_block(variant_block, alignment[0])
         LOGGER.info("%s, categorized as: %s", variant_block, category)
 
 
