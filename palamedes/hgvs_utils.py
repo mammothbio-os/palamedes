@@ -26,7 +26,7 @@ def categorize_variant_block(variant_block: VariantBlock, aligned_reference_sequ
     - A single position mismatch => Substitution
     - 1 or more deletion positions and nothing else => Deletion
     - 1 or more insertion positions and nothing else
-        - If fully upstream of downstream of reference => Extension
+        - If fully upstream or fully downstream of reference => Extension
         - If inserted bases perfectly match upstream bases => Duplication
         - If inserted bases are comprised of a repeating sub-string that perfectly matches upstream bases => Repeat
         - If nothing else => Insertion
