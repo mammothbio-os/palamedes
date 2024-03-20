@@ -2,6 +2,7 @@ import logging
 from argparse import ArgumentParser
 
 from palamedes.align import generate_alignment, generate_variant_blocks
+from palamedes.hgvs_utils import categorize_variant_block
 from palamedes.utils import configure_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -29,9 +30,10 @@ def main() -> None:
     LOGGER.info("Alignment:\n%s", str(alignment))
 
     variant_blocks = generate_variant_blocks(alignment)
-    LOGGER.info("%s Variant blocks generated!", len(variant_blocks))
+    LOGGER.info("%s Variant blocks generated", len(variant_blocks))
     for variant_block in variant_blocks:
-        LOGGER.info("%s", variant_block)
+        category = categorize_variant_block(variant_block, alignment[0])
+        LOGGER.info("%s, categorized as: %s", variant_block, category)
 
 
 if __name__ == "__main__":
