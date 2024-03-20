@@ -1,3 +1,5 @@
+from Bio.Align import Alignment
+
 from palamedes.models import VariantBlock
 from palamedes.config import (
     HGVS_VARIANT_TYPE_SUBSTITUTION,
@@ -16,10 +18,9 @@ from palamedes.config import (
 from palamedes.utils import contains_repeated_substring, yield_repeating_substrings
 
 
-def categorize_variant_block(variant_block: VariantBlock, aligned_reference_sequence: str) -> str:
+def categorize_variant_block(variant_block: VariantBlock, alignment: Alignment) -> str:
     """
-    Process a variant block to categorize it with the correct base HGVS "type". Requires the "aligned" reference
-    sequence (with gaps included) to resolve a more involved cases.
+    Process a variant block (with the global alignment) to categorize it with the correct base HGVS "type".
 
     The following rule-set is used:
     - If any matches appear in the block => an error is raised
@@ -44,7 +45,7 @@ def categorize_variant_block(variant_block: VariantBlock, aligned_reference_sequ
         return HGVS_VARIANT_TYPE_DELETION
 
     if set(variant_block.alignment_block.bases) == set([VARIANT_BASE_INSERTION]):
-        reference_end = len(aligned_reference_sequence.rstrip(ALIGNMENT_GAP_CHAR))
+        reference_end = len(alignment[0].rstrip(ALIGNMENT_GAP_CHAR))
         if variant_block.alignment_block.start == 0 or variant_block.alignment_block.start == reference_end:
             return HGVS_VARIANT_TYPE_EXTENSION
 
@@ -53,7 +54,7 @@ def categorize_variant_block(variant_block: VariantBlock, aligned_reference_sequ
         def get_upstream_reference_sequence(num_bases):
             start_pos = variant_block.alignment_block.start - num_bases
             end_pos = variant_block.alignment_block.start
-            return aligned_reference_sequence[start_pos:end_pos]
+            return alignment[0][start_pos:end_pos]
 
         if inserted_bases == get_upstream_reference_sequence(len(inserted_bases)):
             return HGVS_VARIANT_TYPE_DUPLICATION

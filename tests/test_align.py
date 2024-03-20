@@ -1,4 +1,5 @@
 from unittest import TestCase
+from typing import Tuple
 
 from Bio.Align import Alignment, PairwiseAligner
 from Bio.Seq import Seq
@@ -9,6 +10,7 @@ from palamedes.align import (
     make_variant_base,
     can_merge_variant_blocks,
     merge_variant_blocks,
+    generate_seq_records,
     generate_variant_blocks,
 )
 from palamedes.config import (
@@ -20,57 +22,36 @@ from palamedes.config import (
     VARIANT_BASE_INSERTION,
     VARIANT_BASE_DELETION,
     VARIANT_BASE_MISMATCH,
+    MOLECULE_TYPE_PROTEIN,
+    MOLECULE_TYPE_ANNOTATION_KEY,
 )
 from palamedes.models import VariantBlock, Block
 
 
-class BlockTestCase(TestCase):
-    def test_block_create(self):
-        bases = "AAAA"
-        start = 0
-        end = 4
-        block = Block(start, end, bases)
+class GenerateSeqRecordsTestCase(TestCase):
+    def test_generate_seq_records(self):
+        ref_seq = "AAA"
+        alt_seq = "TTT"
 
-        self.assertEqual(block.bases, bases)
-        self.assertEqual(block.start, start)
-        self.assertEqual(block.end, end)
+        ref_seq_rec, alt_seq_rec = generate_seq_records(ref_seq, alt_seq)
 
-    def test_block_collapse_empty_error(self):
-        with self.assertRaisesRegex(ValueError, "empty list"):
-            Block.collapse([])
+        self.assertEqual(ref_seq_rec.seq, ref_seq)
+        self.assertEqual(ref_seq_rec.id, REF_SEQUENCE_ID)
+        self.assertEqual(ref_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: MOLECULE_TYPE_PROTEIN})
 
-    def test_block_collapse_not_adjacent_error(self):
-        first_block = Block(0, 4, "A" * 4)
-        second_block = Block(5, 10, "G" * 6)
+        self.assertEqual(alt_seq_rec.seq, alt_seq)
+        self.assertEqual(alt_seq_rec.id, ALT_SEQUENCE_ID)
+        self.assertEqual(alt_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: MOLECULE_TYPE_PROTEIN})
 
-        with self.assertRaisesRegex(ValueError, "they must be adjacent."):
-            Block.collapse([first_block, second_block])
+    def test_generate_seq_records_custom_molecule_type(self):
+        ref_seq = "AAA"
+        alt_seq = "TTT"
+        custom_molecule_type = "dna"
 
-    def test_block_collapse_single(self):
-        block = Block(0, 4, "A" * 4)
-        collapsed_block = Block.collapse([block])
-        self.assertEqual(collapsed_block, block)
+        ref_seq_rec, alt_seq_rec = generate_seq_records(ref_seq, alt_seq, molecule_type=custom_molecule_type)
 
-    def test_block_collapse(self):
-        first_block = Block(0, 4, "A" * 4)
-        second_block = Block(4, 10, "G" * 6)
-        third_block = Block(10, 15, "C" * 5)
-
-        collapsed_block = Block.collapse([first_block, second_block, third_block])
-        self.assertEqual(collapsed_block.start, first_block.start)
-        self.assertEqual(collapsed_block.end, third_block.end)
-        self.assertEqual(collapsed_block.bases, "A" * 4 + "G" * 6 + "C" * 5)
-
-    def test_block_collapse_unsorted(self):
-        first_block = Block(0, 4, "A" * 4)
-        second_block = Block(4, 10, "G" * 6)
-        third_block = Block(10, 15, "C" * 5)
-
-        # shuffle the order
-        collapsed_block = Block.collapse([third_block, first_block, second_block])
-        self.assertEqual(collapsed_block.start, first_block.start)
-        self.assertEqual(collapsed_block.end, third_block.end)
-        self.assertEqual(collapsed_block.bases, "A" * 4 + "G" * 6 + "C" * 5)
+        self.assertEqual(ref_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: custom_molecule_type})
+        self.assertEqual(alt_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: custom_molecule_type})
 
 
 class MakeVariantBaseTestCase(TestCase):
@@ -193,42 +174,49 @@ class MergeVariantBlocksTestCase(TestCase):
 
 
 class GenerateAlignmentTestCase(TestCase):
+    def make_seq_records(
+        self, ref_seq: str, alt_seq: str, molecule_type: str = MOLECULE_TYPE_PROTEIN
+    ) -> Tuple[SeqRecord, SeqRecord]:
+        ref = SeqRecord(Seq(ref_seq), id=REF_SEQUENCE_ID, annotations={MOLECULE_TYPE_ANNOTATION_KEY: molecule_type})
+        alt = SeqRecord(Seq(alt_seq), id=ALT_SEQUENCE_ID, annotations={MOLECULE_TYPE_ANNOTATION_KEY: molecule_type})
+        return ref, alt
+
+    def test_generate_alignment_missing_molecule_type_error(self):
+        ref, alt = self.make_seq_records("A", "A", molecule_type="foobar")
+        del ref.annotations[MOLECULE_TYPE_ANNOTATION_KEY]
+        with self.assertRaisesRegex(ValueError, "got: None"):
+            generate_alignment(ref, alt)
+
+    def test_generate_alignment_wrong_molecule_type_error(self):
+        ref, alt = self.make_seq_records("A", "A", molecule_type="foobar")
+
+        with self.assertRaisesRegex(ValueError, f"expected: {MOLECULE_TYPE_PROTEIN}"):
+            generate_alignment(ref, alt)
+
     def test_generate_alignment_custom_aligner_mode_error(self):
         local_mode = "local"
         custom_aligner = PairwiseAligner(mode=local_mode)
+        ref, alt = self.make_seq_records("A", "T")
         with self.assertRaisesRegex(ValueError, f"got: {local_mode}"):
-            generate_alignment("A", "T", aligner=custom_aligner)
+            generate_alignment(ref, alt, aligner=custom_aligner)
 
     def test_generate_alignment(self):
-        ref_seq = "A"
-        alt_seq = "T"
+        ref, alt = self.make_seq_records("A", "T")
 
-        alignment = generate_alignment(ref_seq, alt_seq)
+        alignment = generate_alignment(ref, alt)
+
         self.assertTrue(isinstance(alignment, Alignment))
-
-        self.assertEqual(alignment.target.id, REF_SEQUENCE_ID)
-        self.assertEqual(str(alignment.target.seq), ref_seq)
-
-        self.assertEqual(alignment.query.id, ALT_SEQUENCE_ID)
-        self.assertEqual(str(alignment.query.seq), alt_seq)
+        self.assertIs(alignment.target, ref)
+        self.assertIs(alignment.query, alt)
 
     def test_generate_alignment_custom_aligner(self):
-        ref_seq = "A"
-        alt_seq = "A"
+        ref, alt = self.make_seq_records("A", "A")
 
         custom_match_score = 10_000
         custom_aligner = PairwiseAligner(mode=GLOBAL_ALIGN_MODE, match_score=custom_match_score)
 
-        alignment = generate_alignment(ref_seq, alt_seq, aligner=custom_aligner)
+        alignment = generate_alignment(ref, alt, aligner=custom_aligner)
         self.assertTrue(alignment.score, custom_match_score)
-
-    def test_generate_alignment_input_seq_records(self):
-        ref_seq_rec = SeqRecord(Seq("A"), id="custom-ref")
-        alt_seq_rec = SeqRecord(Seq("T"), id="custom-alt")
-
-        alignment = generate_alignment(ref_seq_rec, alt_seq_rec)
-        self.assertIs(alignment.target, ref_seq_rec)
-        self.assertIs(alignment.query, alt_seq_rec)
 
 
 class GenerateVariantBlocksTestCase(TestCase):
