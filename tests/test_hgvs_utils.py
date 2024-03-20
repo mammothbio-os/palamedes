@@ -183,3 +183,72 @@ class CategorizeVariantBlockTestCase(TestCase):
         alignment = self.make_alignment("A-AT", "-GAT")
 
         self.assertEqual(categorize_variant_block(variant_block, alignment), HGVS_VARIANT_TYPE_DELETION_INSERTION)
+
+    def test_categorize_variant_block_disrupted_duplication(self):
+        """
+        Test that upstream gaps are not considered when identifying a duplication, in other words the
+        unaligned reference sequence should be used for checking the match. Using the following alignment:
+
+            T - T T T - - - - A T G
+            T G T T T T T T T A T G
+           0 1 2 3 4 5 6 7 8 9 A B C ALIGN
+           0 1 . 2 3 4 . . . . 5 6 7 REF
+           0 1 2 3 4 5 6 7 8 9 A B C ALT
+
+        This should be called as a duplication, the upstream reference sequence in the alignment is: -TTT,
+        but in the actual sequence it is: TTTT, and that is what should be checked, NOT the version with gaps.
+        """
+        variant_block = VariantBlock(
+            Block(5, 9, VARIANT_BASE_INSERTION * 4),
+            [],
+            [Block(5, 9, "TTTT")],
+        )
+
+        alignment = self.make_alignment("T-TTT----ATG", "TGTTTTTTTATG")
+
+        self.assertEqual(categorize_variant_block(variant_block, alignment), HGVS_VARIANT_TYPE_DUPLICATION)
+
+    def test_categorize_variant_block_disrupted_repeat(self):
+        """
+        Test that upstream gaps are not considered when identifying a repeat, in other words the
+        unaligned reference sequence should be used for checking the match. Using the following alignment:
+
+            T T - A - - - - A T G
+            T T G A T A T A A T G
+           0 1 2 3 4 5 6 7 8 9 A B ALIGN
+           0 1 . 2 3 . . . . 4 5 6 REF
+           0 1 2 3 4 5 6 7 8 9 A B ALT
+
+        This should be called as a repeat, the upstream reference sequence in the alignment is: TT-A,
+        but in the actual sequence it is: TTA, and that is what should be checked, NOT the version with gaps.
+        The insert is TATA, which is a 2 repeat of the TA.
+        """
+        variant_block = VariantBlock(
+            Block(5, 9, VARIANT_BASE_INSERTION * 4),
+            [],
+            [Block(5, 9, "TATA")],
+        )
+
+        alignment = self.make_alignment("TT-A----ATG", "TTGATATAATG")
+
+        self.assertEqual(categorize_variant_block(variant_block, alignment), HGVS_VARIANT_TYPE_REPEAT)
+
+    def test_categorize_variant_block_out_of_bounds_upstream(self):
+        """
+        Ensure the upstream sequence check is safe in terms of looking out of bounds, using the following
+        alignment:
+            A - - - - A T G
+            A T T T T A T G
+           0 1 2 3 4 5 6 7 8 ALIGN
+           0 1 . . . . 2 3 4 REF
+           0 1 2 3 4 5 6 7 8 ALT
+        """
+        variant_block = VariantBlock(
+            Block(1, 5, VARIANT_BASE_INSERTION * 4),
+            [],
+            [Block(1, 5, "TTTT")],
+        )
+
+        alignment = self.make_alignment("A----ATG", "ATTTTATG")
+
+        self.assertEqual(categorize_variant_block(variant_block, alignment), HGVS_VARIANT_TYPE_INSERTION)
