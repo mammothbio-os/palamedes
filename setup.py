@@ -11,5 +11,5 @@ setup(
         'console_scripts': ['palamedes=palamedes.cli:main'],
     },
     packages=find_packages(),
-    install_requires=['biopython~=1.83'],
+    install_requires=['biopython~=1.83', 'hgvs~=1.5.4'],
 )
