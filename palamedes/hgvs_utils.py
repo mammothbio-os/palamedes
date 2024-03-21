@@ -45,8 +45,8 @@ def categorize_variant_block(variant_block: VariantBlock, alignment: Alignment) 
         return HGVS_VARIANT_TYPE_DELETION
 
     if set(variant_block.alignment_block.bases) == set([VARIANT_BASE_INSERTION]):
-        reference_end = len(alignment.target.seq)
-        if variant_block.alignment_block.start == 0 or variant_block.alignment_block.start == reference_end:
+        alignment_end = len(alignment[0])
+        if variant_block.alignment_block.start == 0 or variant_block.alignment_block.end == alignment_end:
             return HGVS_VARIANT_TYPE_EXTENSION
 
         inserted_bases = variant_block.alternate_blocks[0].bases

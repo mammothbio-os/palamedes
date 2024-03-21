@@ -93,6 +93,26 @@ class CategorizeVariantBlockTestCase(PalamedesBaseCase):
 
         self.assertEqual(categorize_variant_block(variant_block, alignment), HGVS_VARIANT_TYPE_EXTENSION)
 
+    def test_categorize_variant_block_downstream_insertion_with_other_gaps(self):
+        """
+        Assume the following fake alignment:
+
+            T - T T - - -
+            T G T T A A A
+           0 1 2 3 4 5 6 7 ALIGNMENT
+           0 1 . 2 3 . . . REF
+           0 1 2 3 4 5 6 7 ALT
+        """
+        variant_block = VariantBlock(
+            Block(4, 7, VARIANT_BASE_INSERTION * 3),
+            [],
+            [Block(4, 7, "AAA")],
+        )
+
+        alignment = self.make_alignment("T-TT---", "TGTTAAA")
+
+        self.assertEqual(categorize_variant_block(variant_block, alignment), HGVS_VARIANT_TYPE_EXTENSION)
+
     def test_categorize_variant_block_duplication(self):
         """
         Using the following alignment:

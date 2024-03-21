@@ -30,6 +30,10 @@ LOGGER = logging.getLogger(__name__)
 def generate_seq_records(
     reference_sequence: str, alternate_sequence: str, molecule_type: str = MOLECULE_TYPE_PROTEIN
 ) -> Tuple[SeqRecord, SeqRecord]:
+    """
+    Helper function to generate SeqRecord objects from the reference and alternate sequences. This also handles
+    configuring the expected molecule_type annotation which is required for downstream steps.
+    """
     reference_seq_record = SeqRecord(
         Seq(reference_sequence),
         id=REF_SEQUENCE_ID,
@@ -115,9 +119,8 @@ def generate_alignment(
 ) -> Alignment:
     """
     Using biopython's PairwiseAligner, generate an alignment object representing the best alignment
-    between the 2 inputs (which can either be raw string sequences or biopython SeqRecords). Note that
-    the molecule_type argument will be used to specify a molecule_type annotation on the SeqRecord. If
-    giving SeqRecord objects directly, this annotation must be set and must match the input.
+    between the 2 biopython SeqRecords. Note that the molecule_type argument will be used to specify a molecule_type
+    annotation on the SeqRecord.
 
     By default the function creates an aligner object using the defaults, but the caller may provide their
     own pre-configured aligner. This aligner must be set to 'global' mode.
