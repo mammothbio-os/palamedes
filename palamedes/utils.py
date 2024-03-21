@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Iterable
+from typing import Iterable, Tuple
 
 
 def configure_logging(force: bool = False):
@@ -51,3 +51,32 @@ def yield_repeating_substrings(input_string: str) -> Iterable[str]:
             yield substr_for_idx
 
         idx += 1
+
+
+def zb_to_ob(zb: int) -> int:
+    """
+    Convert a single zero based position (or sequence index) into one based. This means simply adding 1 to it.
+    This function simply exists to make things more explicit and avoid having magic "+ 1"s everywhere.
+    """
+    return zb + 1
+
+
+def zbho_to_obfc(zbho_start: int, zbho_end: int) -> Tuple[int, int]:
+    """
+    Convert a zero based half open (start, end) into a one based fully closed, based on the following:
+    - add 1 to both positions to account for zero ==> one
+    - subtract 1 to the end position to account for half open to fully closed
+    """
+    return (
+        zb_to_ob(zbho_start),
+        zb_to_ob(zbho_end) - 1,
+    )
+
+
+def zb_position_to_end_coordinate(zb_position: int) -> int:
+    """
+    Convert a zero based position (or index) into the end coordinate of a ZBHO interval including
+    this position as the ending position. This is done by simply adding 1 to the position to make it
+    half open. Again this is just to make this clearer and more explicit.
+    """
+    return zb_position + 1

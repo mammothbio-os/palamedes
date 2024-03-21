@@ -1,6 +1,6 @@
 import logging
 from functools import reduce
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple
 
 from Bio.Align import Alignment, PairwiseAligner
 from Bio.Seq import Seq
@@ -19,10 +19,32 @@ from palamedes.config import (
     VARIANT_BASE_INSERTION,
     VARIANT_BASE_MATCH,
     VARIANT_BASE_MISMATCH,
+    MOLECULE_TYPE_PROTEIN,
+    MOLECULE_TYPE_ANNOTATION_KEY,
 )
 from palamedes.models import Block, VariantBlock
 
 LOGGER = logging.getLogger(__name__)
+
+
+def generate_seq_records(
+    reference_sequence: str, alternate_sequence: str, molecule_type: str = MOLECULE_TYPE_PROTEIN
+) -> Tuple[SeqRecord, SeqRecord]:
+    """
+    Helper function to generate SeqRecord objects from the reference and alternate sequences. This also handles
+    configuring the expected molecule_type annotation which is required for downstream steps.
+    """
+    reference_seq_record = SeqRecord(
+        Seq(reference_sequence),
+        id=REF_SEQUENCE_ID,
+        annotations={MOLECULE_TYPE_ANNOTATION_KEY: molecule_type},
+    )
+    alternate_seq_obj = SeqRecord(
+        Seq(alternate_sequence),
+        id=ALT_SEQUENCE_ID,
+        annotations={MOLECULE_TYPE_ANNOTATION_KEY: molecule_type},
+    )
+    return reference_seq_record, alternate_seq_obj
 
 
 def make_variant_base(ref_base: str, alt_base: str) -> str:
@@ -90,13 +112,15 @@ def merge_reduce(blocks: List[VariantBlock], next_block: VariantBlock) -> List[V
 
 
 def generate_alignment(
-    reference_sequence: Union[str, SeqRecord],
-    alternate_sequence: Union[str, SeqRecord],
+    reference_seq_record: SeqRecord,
+    alternate_seq_record: SeqRecord,
+    molecule_type: str = MOLECULE_TYPE_PROTEIN,
     aligner: Optional[PairwiseAligner] = None,
 ) -> Alignment:
     """
     Using biopython's PairwiseAligner, generate an alignment object representing the best alignment
-    between the 2 inputs (which can either be raw string sequences or biopython SeqRecords).
+    between the 2 biopython SeqRecords. Note that the molecule_type argument will be used to specify a molecule_type
+    annotation on the SeqRecord.
 
     By default the function creates an aligner object using the defaults, but the caller may provide their
     own pre-configured aligner. This aligner must be set to 'global' mode.
@@ -144,18 +168,19 @@ def generate_alignment(
             extend_gap_score=DEFAULT_EXTEND_GAP_SCORE,
         )
 
-    ref_seq_obj = (
-        reference_sequence
-        if isinstance(reference_sequence, SeqRecord)
-        else SeqRecord(Seq(reference_sequence), id=REF_SEQUENCE_ID)
-    )
-    alt_seq_obj = (
-        alternate_sequence
-        if isinstance(alternate_sequence, SeqRecord)
-        else SeqRecord(Seq(alternate_sequence), id=ALT_SEQUENCE_ID)
-    )
+    if (ref_molecule_type := reference_seq_record.annotations.get("molecule_type")) != molecule_type:
+        raise ValueError(
+            "Cannot generate alignment, reference_seq_record is a SeqRecord an invalid molecule_type annotation "
+            f"got: {ref_molecule_type}, expected: {molecule_type}!"
+        )
 
-    alignments = aligner.align(ref_seq_obj, alt_seq_obj)
+    if (alt_molecule_type := alternate_seq_record.annotations.get("molecule_type")) != molecule_type:
+        raise ValueError(
+            "Cannot generate alignment, alternate_seq_record is a SeqRecord an invalid molecule_type annotation "
+            f"got: {alt_molecule_type}, expected: {molecule_type}!"
+        )
+
+    alignments = aligner.align(reference_seq_record, alternate_seq_record)
     best_alignment = next(alignments)
     best_alignment_score = best_alignment.score
 
@@ -184,7 +209,8 @@ def generate_variant_blocks(alignment: Alignment) -> List[VariantBlock]:
     - We define a reduce function that treats the accumulator like a stack, peeking the head, checking
       for merge-ability and merging if possible at each iteration.
     """
-    reference_indices, alternate_indices = alignment.indices
+    reference_indices = alignment.indices[0].tolist()
+    alternate_indices = alignment.indices[1].tolist()
     bases_zipper = zip(alignment[0], alignment[1])
 
     # First generate a VariantBlock for all positions in the Alignment along with the relevant sequence Blocks
@@ -220,3 +246,15 @@ def generate_variant_blocks(alignment: Alignment) -> List[VariantBlock]:
     return [
         merged_block for merged_block in merged_blocks if VARIANT_BASE_MATCH not in merged_block.alignment_block.bases
     ]
+
+
+def get_upstream_reference_sequence(alignment: Alignment, anchor_position: int, num_bases: int) -> str:
+    """
+    Get num_bases of the reference sequence directly upstream of a variant block. This is done by treating
+    the starting position of the variant block as an anchor into the aligned/gapped reference sequence.
+    A slice is then taken from 0 -> the anchor position, and gaps are removed from this slice. Finally,
+    return the last num_bases of the substring. This is done to avoid cases where an upstream gap
+    may cause a more naive approach to miss a duplication or repeat (since a gap might appear in the checked sequence).
+    """
+    ungapped_ref = alignment[0][:anchor_position].replace(ALIGNMENT_GAP_CHAR, "")
+    return ungapped_ref[-num_bases:]

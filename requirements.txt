@@ -1,1 +1,2 @@
 biopython~=1.83
+hgvs~=1.5.4
