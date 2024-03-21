@@ -1,9 +1,4 @@
-from unittest import TestCase
-from typing import Tuple
-
 from Bio.Align import Alignment, PairwiseAligner
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 
 from palamedes.align import (
     generate_alignment,
@@ -26,9 +21,10 @@ from palamedes.config import (
     MOLECULE_TYPE_ANNOTATION_KEY,
 )
 from palamedes.models import VariantBlock, Block
+from tests.base import PalamedesBaseCase
 
 
-class GenerateSeqRecordsTestCase(TestCase):
+class GenerateSeqRecordsTestCase(PalamedesBaseCase):
     def test_generate_seq_records(self):
         ref_seq = "AAA"
         alt_seq = "TTT"
@@ -54,7 +50,7 @@ class GenerateSeqRecordsTestCase(TestCase):
         self.assertEqual(alt_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: custom_molecule_type})
 
 
-class MakeVariantBaseTestCase(TestCase):
+class MakeVariantBaseTestCase(PalamedesBaseCase):
     def test_make_variant_base_match(self):
         self.assertEqual(make_variant_base("A", "A"), VARIANT_BASE_MATCH)
 
@@ -68,7 +64,7 @@ class MakeVariantBaseTestCase(TestCase):
         self.assertEqual(make_variant_base(ALIGNMENT_GAP_CHAR, "T"), VARIANT_BASE_INSERTION)
 
 
-class CanMergeVariantBlocksTestCase(TestCase):
+class CanMergeVariantBlocksTestCase(PalamedesBaseCase):
     def make_variant_block(self, start: int, end: int, bases: str) -> VariantBlock:
         return VariantBlock(Block(start, end, bases), [], [])
 
@@ -98,7 +94,7 @@ class CanMergeVariantBlocksTestCase(TestCase):
         self.assertTrue(can_merge_variant_blocks(left, right))
 
 
-class MergeVariantBlocksTestCase(TestCase):
+class MergeVariantBlocksTestCase(PalamedesBaseCase):
     def test_merge_variant_blocks_simple(self):
         """Test merging 2 single base mismatches"""
         left = VariantBlock(
@@ -173,14 +169,7 @@ class MergeVariantBlocksTestCase(TestCase):
         )
 
 
-class GenerateAlignmentTestCase(TestCase):
-    def make_seq_records(
-        self, ref_seq: str, alt_seq: str, molecule_type: str = MOLECULE_TYPE_PROTEIN
-    ) -> Tuple[SeqRecord, SeqRecord]:
-        ref = SeqRecord(Seq(ref_seq), id=REF_SEQUENCE_ID, annotations={MOLECULE_TYPE_ANNOTATION_KEY: molecule_type})
-        alt = SeqRecord(Seq(alt_seq), id=ALT_SEQUENCE_ID, annotations={MOLECULE_TYPE_ANNOTATION_KEY: molecule_type})
-        return ref, alt
-
+class GenerateAlignmentTestCase(PalamedesBaseCase):
     def test_generate_alignment_missing_molecule_type_error(self):
         ref, alt = self.make_seq_records("A", "A", molecule_type="foobar")
         del ref.annotations[MOLECULE_TYPE_ANNOTATION_KEY]
@@ -219,14 +208,7 @@ class GenerateAlignmentTestCase(TestCase):
         self.assertTrue(alignment.score, custom_match_score)
 
 
-class GenerateVariantBlocksTestCase(TestCase):
-    def make_alignment(self, ref_aligned_bases: str, alt_aligned_bases: str) -> Alignment:
-        coords = Alignment.infer_coordinates([ref_aligned_bases, alt_aligned_bases])
-        return Alignment(
-            [ref_aligned_bases.replace(ALIGNMENT_GAP_CHAR, ""), alt_aligned_bases.replace(ALIGNMENT_GAP_CHAR, "")],
-            coords,
-        )
-
+class GenerateVariantBlocksTestCase(PalamedesBaseCase):
     def test_generate_variant_blocks_all_matches(self):
         alignment = self.make_alignment("A" * 5, "A" * 5)
         self.assertEqual(generate_variant_blocks(alignment), [])

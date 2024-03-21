@@ -1,7 +1,3 @@
-from unittest import TestCase
-
-from Bio.Align import Alignment
-
 from palamedes.hgvs_utils import categorize_variant_block
 from palamedes.config import (
     HGVS_VARIANT_TYPE_SUBSTITUTION,
@@ -15,19 +11,12 @@ from palamedes.config import (
     VARIANT_BASE_MISMATCH,
     VARIANT_BASE_DELETION,
     VARIANT_BASE_INSERTION,
-    ALIGNMENT_GAP_CHAR,
 )
 from palamedes.models import Block, VariantBlock
+from tests.base import PalamedesBaseCase
 
 
-class CategorizeVariantBlockTestCase(TestCase):
-    def make_alignment(self, ref_aligned_bases: str, alt_aligned_bases: str) -> Alignment:
-        coords = Alignment.infer_coordinates([ref_aligned_bases, alt_aligned_bases])
-        return Alignment(
-            [ref_aligned_bases.replace(ALIGNMENT_GAP_CHAR, ""), alt_aligned_bases.replace(ALIGNMENT_GAP_CHAR, "")],
-            coords,
-        )
-
+class CategorizeVariantBlockTestCase(PalamedesBaseCase):
     def test_categorize_variant_block_match_error(self):
         variant_block = VariantBlock(
             Block(0, 1, VARIANT_BASE_MATCH),
