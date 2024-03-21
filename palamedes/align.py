@@ -243,3 +243,15 @@ def generate_variant_blocks(alignment: Alignment) -> List[VariantBlock]:
     return [
         merged_block for merged_block in merged_blocks if VARIANT_BASE_MATCH not in merged_block.alignment_block.bases
     ]
+
+
+def get_upstream_reference_sequence(alignment: Alignment, anchor_position: int, num_bases: int) -> str:
+    """
+    Get num_bases of the reference sequence directly upstream of a variant block. This is done by treating
+    the starting position of the variant block as an anchor into the aligned/gapped reference sequence.
+    A slice is then taken from 0 -> the anchor position, and gaps are removed from this slice. Finally,
+    return the last num_bases of the substring. This is done to avoid cases where an upstream gap
+    may cause a more naive approach to miss a duplication or repeat (since a gap might appear in the checked sequence).
+    """
+    ungapped_ref = alignment[0][:anchor_position].replace(ALIGNMENT_GAP_CHAR, "")
+    return ungapped_ref[-num_bases:]

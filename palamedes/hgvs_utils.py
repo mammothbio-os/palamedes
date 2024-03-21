@@ -1,5 +1,6 @@
 from Bio.Align import Alignment
 
+from palamedes.align import get_upstream_reference_sequence
 from palamedes.models import VariantBlock
 from palamedes.config import (
     HGVS_VARIANT_TYPE_SUBSTITUTION,
@@ -13,22 +14,8 @@ from palamedes.config import (
     VARIANT_BASE_MISMATCH,
     VARIANT_BASE_DELETION,
     VARIANT_BASE_INSERTION,
-    ALIGNMENT_GAP_CHAR,
 )
 from palamedes.utils import contains_repeated_substring, yield_repeating_substrings
-
-
-def get_upstream_reference_sequence(variant_block: VariantBlock, alignment: Alignment, num_bases: int) -> str:
-    """
-    Get num_bases of the reference sequence directly upstream of a variant block. This is done by treating
-    the starting position of the variant block as an anchor into the aligned/gapped reference sequence.
-    A slice is then taken from 0 -> the anchor position, and gaps are removed from this slice. Finally,
-    return the last num_bases of the substring. This is done to avoid cases where an upstream gap
-    may cause a more naive approach to miss a duplication or repeat (since a gap might appear in the checked sequence).
-    """
-    anchor_position = variant_block.alignment_block.start
-    ungapped_ref = alignment[0][:anchor_position].replace(ALIGNMENT_GAP_CHAR, "")
-    return ungapped_ref[-num_bases:]
 
 
 def categorize_variant_block(variant_block: VariantBlock, alignment: Alignment) -> str:
@@ -58,20 +45,23 @@ def categorize_variant_block(variant_block: VariantBlock, alignment: Alignment) 
         return HGVS_VARIANT_TYPE_DELETION
 
     if set(variant_block.alignment_block.bases) == set([VARIANT_BASE_INSERTION]):
-        reference_end = len(alignment[0].rstrip(ALIGNMENT_GAP_CHAR))
+        reference_end = len(alignment.target.seq)
         if variant_block.alignment_block.start == 0 or variant_block.alignment_block.start == reference_end:
             return HGVS_VARIANT_TYPE_EXTENSION
 
         inserted_bases = variant_block.alternate_blocks[0].bases
 
-        if inserted_bases == get_upstream_reference_sequence(variant_block, alignment, len(inserted_bases)):
+        if inserted_bases == get_upstream_reference_sequence(
+            alignment, variant_block.alignment_block.start, len(inserted_bases)
+        ):
             return HGVS_VARIANT_TYPE_DUPLICATION
 
         if contains_repeated_substring(inserted_bases):
             candidate_repeats = [
                 substring
                 for substring in yield_repeating_substrings(inserted_bases)
-                if get_upstream_reference_sequence(variant_block, alignment, len(substring)) == substring
+                if get_upstream_reference_sequence(alignment, variant_block.alignment_block.start, len(substring))
+                == substring
             ]
             if len(candidate_repeats) > 0:
                 return HGVS_VARIANT_TYPE_REPEAT
