@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from palamedes.align import generate_seq_records, generate_alignment, generate_variant_blocks
 from palamedes.config import MOLECULE_TYPE_PROTEIN
 from palamedes.hgvs_utils import categorize_variant_block
+from palamedes.hgvs_builders import BUILDER_CONFIG
 from palamedes.utils import configure_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -41,9 +42,14 @@ def main() -> None:
 
     variant_blocks = generate_variant_blocks(alignment)
     LOGGER.info("%s Variant blocks generated", len(variant_blocks))
+
+    builder = BUILDER_CONFIG[args.molecule_type](alignment)
     for variant_block in variant_blocks:
         category = categorize_variant_block(variant_block, alignment)
         LOGGER.info("%s, categorized as: %s", variant_block, category)
+
+        hgvs = builder.build(variant_block, category)
+        LOGGER.info("As HGVS: %s", hgvs.format())
 
 
 if __name__ == "__main__":
