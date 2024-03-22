@@ -2,7 +2,7 @@
 .pytest_cache/*
 .venv/*
 .python-version
-build/
+*build/
 dist/
 *.egg-info
 *__pycache__*
