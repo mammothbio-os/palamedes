@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Iterable, Tuple
+from typing import Iterable
 
 
 def configure_logging(force: bool = False):
@@ -61,7 +61,7 @@ def zb_to_ob(zb: int) -> int:
     return zb + 1
 
 
-def zbho_to_obfc(zbho_start: int, zbho_end: int) -> Tuple[int, int]:
+def zbho_to_obfc(zbho_start: int, zbho_end: int) -> tuple[int, int]:
     """
     Convert a zero based half open (start, end) into a one based fully closed, based on the following:
     - add 1 to both positions to account for zero ==> one

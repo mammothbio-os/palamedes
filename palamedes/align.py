@@ -1,6 +1,5 @@
 import logging
 from functools import reduce
-from typing import List, Optional
 
 from Bio.Align import Alignment, PairwiseAligner
 from Bio.Seq import Seq
@@ -89,7 +88,7 @@ def merge_variant_blocks(left: VariantBlock, right: VariantBlock) -> VariantBloc
     return VariantBlock(new_alignment_block, new_reference_blocks, new_alternate_blocks)
 
 
-def merge_reduce(blocks: List[VariantBlock], next_block: VariantBlock) -> List[VariantBlock]:
+def merge_reduce(blocks: list[VariantBlock], next_block: VariantBlock) -> list[VariantBlock]:
     """Helper function to implement merge or append, passed to functools.reduce to merge blocks"""
     peek_block = blocks[-1]
 
@@ -105,7 +104,7 @@ def generate_alignment(
     reference_seq_record: SeqRecord,
     alternate_seq_record: SeqRecord,
     molecule_type: str = MOLECULE_TYPE_PROTEIN,
-    aligner: Optional[PairwiseAligner] = None,
+    aligner: PairwiseAligner | None = None,
 ) -> Alignment:
     """
     Using biopython's PairwiseAligner, generate an alignment object representing the best alignment
@@ -185,7 +184,7 @@ def generate_alignment(
     return best_alignment
 
 
-def generate_variant_blocks(alignment: Alignment) -> List[VariantBlock]:
+def generate_variant_blocks(alignment: Alignment) -> list[VariantBlock]:
     """
     Given a BioPython.Alignment object, parse the alignment to generate a list of VariantBlock objects.
     A VariantBlock is an internal object which represents a contiguous run of positions within the alignment

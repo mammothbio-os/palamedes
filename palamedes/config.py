@@ -1,5 +1,3 @@
-from typing import Dict
-
 GLOBAL_ALIGN_MODE: str = "global"
 
 # default alignment params, meant to favor a single Substitution vs some Indel
@@ -29,4 +27,4 @@ HGVS_VARIANT_TYPE_DELETION_INSERTION: str = "deletion_insertion"
 MOLECULE_TYPE_ANNOTATION_KEY: str = "molecule_type"
 MOLECULE_TYPE_PROTEIN: str = "protein"
 HGVS_TYPE_PROTEIN: str = "p"
-MOLCULE_TO_HGVS_TYPE_MAP: Dict[str, str] = {MOLECULE_TYPE_PROTEIN: HGVS_TYPE_PROTEIN}
+MOLCULE_TO_HGVS_TYPE_MAP: dict[str, str] = {MOLECULE_TYPE_PROTEIN: HGVS_TYPE_PROTEIN}

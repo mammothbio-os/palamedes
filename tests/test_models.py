@@ -1,6 +1,5 @@
 from unittest import TestCase
 
-
 from palamedes.models import Block
 
 
