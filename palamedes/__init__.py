@@ -1,5 +1,3 @@
-from typing import List, Union, Optional
-
 from Bio.Align import PairwiseAligner
 from Bio.SeqRecord import SeqRecord
 from hgvs.sequencevariant import SequenceVariant
@@ -14,11 +12,11 @@ __version__ = "0.0.0"
 
 
 def generate_hgvs_variants(
-    reference_sequence: Union[str, SeqRecord],
-    alternate_sequence: Union[str, SeqRecord],
+    reference_sequence: str | SeqRecord,
+    alternate_sequence: str | SeqRecord,
     molecule_type: str = MOLECULE_TYPE_PROTEIN,
-    aligner: Optional[PairwiseAligner] = None,
-) -> List[SequenceVariant]:
+    aligner: PairwiseAligner | None = None,
+) -> list[SequenceVariant]:
     """
     Given the reference and alternate sequences, as either strings or `Bio.SeqRecord.SeqRecord` objects, compute the
     alignment, find the variants and build `hgvs.sequencevariant.SequenceVariant` objects from them. Returning the list
