@@ -16,3 +16,6 @@ lint:
 
 clean:
 	ruff format palamedes/ tests/
+
+sphinx:
+	sphinx-build -M html docs/ docs/_build/

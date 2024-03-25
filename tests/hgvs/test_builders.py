@@ -1,6 +1,6 @@
 from hgvs.sequencevariant import SequenceVariant
 
-from palamedes.hgvs_builders import HgvsProteinBuilder
+from palamedes.hgvs.builders import HgvsProteinBuilder
 from palamedes.models import VariantBlock, Block
 from palamedes.config import (
     VARIANT_BASE_MISMATCH,

@@ -3,20 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Palamedes's documentation!
-=====================================
+Palamedes: HGVS variants from sequence alignments
+=================================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-.. autofunction:: palamedes.align.generate_seq_records
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. autofunction:: palamedes.generate_hgvs_variants

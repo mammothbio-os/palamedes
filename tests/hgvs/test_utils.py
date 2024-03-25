@@ -1,4 +1,4 @@
-from palamedes.hgvs_utils import categorize_variant_block
+from palamedes.hgvs.utils import categorize_variant_block
 from palamedes.config import (
     HGVS_VARIANT_TYPE_SUBSTITUTION,
     HGVS_VARIANT_TYPE_DELETION,

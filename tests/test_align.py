@@ -5,11 +5,10 @@ from palamedes.align import (
     make_variant_base,
     can_merge_variant_blocks,
     merge_variant_blocks,
-    generate_seq_records,
+    generate_seq_record,
     generate_variant_blocks,
 )
 from palamedes.config import (
-    ALT_SEQUENCE_ID,
     GLOBAL_ALIGN_MODE,
     REF_SEQUENCE_ID,
     VARIANT_BASE_MATCH,
@@ -25,29 +24,20 @@ from tests.base import PalamedesBaseCase
 
 
 class GenerateSeqRecordsTestCase(PalamedesBaseCase):
-    def test_generate_seq_records(self):
-        ref_seq = "AAA"
-        alt_seq = "TTT"
+    def test_generate_seq_record(self):
+        seq = "AAA"
+        seq_rec = generate_seq_record(seq, REF_SEQUENCE_ID)
 
-        ref_seq_rec, alt_seq_rec = generate_seq_records(ref_seq, alt_seq)
+        self.assertEqual(seq_rec.seq, seq)
+        self.assertEqual(seq_rec.id, REF_SEQUENCE_ID)
+        self.assertEqual(seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: MOLECULE_TYPE_PROTEIN})
 
-        self.assertEqual(ref_seq_rec.seq, ref_seq)
-        self.assertEqual(ref_seq_rec.id, REF_SEQUENCE_ID)
-        self.assertEqual(ref_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: MOLECULE_TYPE_PROTEIN})
-
-        self.assertEqual(alt_seq_rec.seq, alt_seq)
-        self.assertEqual(alt_seq_rec.id, ALT_SEQUENCE_ID)
-        self.assertEqual(alt_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: MOLECULE_TYPE_PROTEIN})
-
-    def test_generate_seq_records_custom_molecule_type(self):
-        ref_seq = "AAA"
-        alt_seq = "TTT"
+    def test_generate_seq_record_custom_molecule_type(self):
+        seq = "AAA"
         custom_molecule_type = "dna"
 
-        ref_seq_rec, alt_seq_rec = generate_seq_records(ref_seq, alt_seq, molecule_type=custom_molecule_type)
-
-        self.assertEqual(ref_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: custom_molecule_type})
-        self.assertEqual(alt_seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: custom_molecule_type})
+        seq_rec = generate_seq_record(seq, REF_SEQUENCE_ID, molecule_type=custom_molecule_type)
+        self.assertEqual(seq_rec.annotations, {MOLECULE_TYPE_ANNOTATION_KEY: custom_molecule_type})
 
 
 class MakeVariantBaseTestCase(PalamedesBaseCase):

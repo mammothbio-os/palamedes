@@ -1,6 +1,6 @@
 import logging
 from functools import reduce
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from Bio.Align import Alignment, PairwiseAligner
 from Bio.Seq import Seq
@@ -8,13 +8,11 @@ from Bio.SeqRecord import SeqRecord
 
 from palamedes.config import (
     ALIGNMENT_GAP_CHAR,
-    ALT_SEQUENCE_ID,
     DEFAULT_EXTEND_GAP_SCORE,
     DEFAULT_MATCH_SCORE,
     DEFAULT_MISMATCH_SCORE,
     DEFAULT_OPEN_GAP_SCORE,
     GLOBAL_ALIGN_MODE,
-    REF_SEQUENCE_ID,
     VARIANT_BASE_DELETION,
     VARIANT_BASE_INSERTION,
     VARIANT_BASE_MATCH,
@@ -27,24 +25,16 @@ from palamedes.models import Block, VariantBlock
 LOGGER = logging.getLogger(__name__)
 
 
-def generate_seq_records(
-    reference_sequence: str, alternate_sequence: str, molecule_type: str = MOLECULE_TYPE_PROTEIN
-) -> Tuple[SeqRecord, SeqRecord]:
+def generate_seq_record(sequence: str, seq_id: str, molecule_type: str = MOLECULE_TYPE_PROTEIN) -> SeqRecord:
     """
-    Helper function to generate SeqRecord objects from the reference and alternate sequences. This also handles
+    Helper function to generate a SeqRecord object from a raw input sequence. This also handles
     configuring the expected molecule_type annotation which is required for downstream steps.
     """
-    reference_seq_record = SeqRecord(
-        Seq(reference_sequence),
-        id=REF_SEQUENCE_ID,
+    return SeqRecord(
+        Seq(sequence),
+        id=seq_id,
         annotations={MOLECULE_TYPE_ANNOTATION_KEY: molecule_type},
     )
-    alternate_seq_obj = SeqRecord(
-        Seq(alternate_sequence),
-        id=ALT_SEQUENCE_ID,
-        annotations={MOLECULE_TYPE_ANNOTATION_KEY: molecule_type},
-    )
-    return reference_seq_record, alternate_seq_obj
 
 
 def make_variant_base(ref_base: str, alt_base: str) -> str:
@@ -186,7 +176,7 @@ def generate_alignment(
 
     other_alignments_with_best = [alignment for alignment in alignments if alignment.score == best_alignment_score]
     if len(other_alignments_with_best) > 0:
-        LOGGER.warning(
+        LOGGER.info(
             "Found %s alignments with max score, returning last in the list (3' end rule)",
             len(other_alignments_with_best) + 1,
         )
