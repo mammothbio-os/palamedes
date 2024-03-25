@@ -45,7 +45,7 @@ be treated as internal and private. No assurances are offered for their consiste
 ]
 
 # using SeqRecord objects, note the molecule_type annotation must be provided and set to a supported type
-# protein is the default and only support option at this time
+# protein is the default and only supported option at this time
 >>> ref = SeqRecord(Seq("PFKISIHL"), id="Jelleine-I", annotations={"molecule_type": "protein"})
 >>> alt = SeqRecord(Seq("TPFKISIH"), id="Jelleine-IV", annotations={"molecule_type": "protein"})
 >>> generate_hgvs_variants(ref, alt)
