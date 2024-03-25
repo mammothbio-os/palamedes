@@ -3,11 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Palamedes: HGVS variants from sequence alignments
-=================================================
+.. include:: ../README.md
+   :parser: myst_parser.sphinx_
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+==========
+API
+==========
 .. autofunction:: palamedes.generate_hgvs_variants

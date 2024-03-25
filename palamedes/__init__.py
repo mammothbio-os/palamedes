@@ -10,6 +10,9 @@ from palamedes.hgvs.utils import categorize_variant_block
 from palamedes.hgvs.builders import BUILDER_CONFIG
 
 
+__version__ = "0.0.0"
+
+
 def generate_hgvs_variants(
     reference_sequence: Union[str, SeqRecord],
     alternate_sequence: Union[str, SeqRecord],
@@ -24,7 +27,7 @@ def generate_hgvs_variants(
     - Variants and their HGVS objects are based on consecutive alignment positions that are non matches, any match will split or disrupt the variant.
     - Variant and their HGVS objects are handled in isolation from others, they do not "account" for things that happen upstream of their position in the alignment.
 
-    A custom PairwiseAligner may be provided to tweak the alignment score, but the default one uses these scores:
+    A custom `PairwiseAligner` may be provided to tweak the alignment score, but the default one uses these scores:
 
     - mode: `global` (this is required, even for a custom one)
     - match score: `1`
@@ -32,7 +35,7 @@ def generate_hgvs_variants(
     - open gap score: `-1`
     - extend gap score: `-0.1`
 
-    If using pre-built SeqRecord objects, be sure to set the `molecule_type` annotation key to a supported molecule type
+    If using pre-built `SeqRecord` objects, be sure to set the `molecule_type` annotation key to a supported molecule type
     and pass in the corresponding molecule_type as an input. At the time of writing, only `protein` is supported as a
     molecule type.
 
@@ -47,7 +50,7 @@ def generate_hgvs_variants(
             SequenceVariant(ac=ref, type=p, posedit=Leu8del, gene=None),
         ]
 
-    Example using pre-configured SeqRecord objects:
+    Example using pre-configured `SeqRecord` objects:
 
     .. code-block:: python
 
@@ -58,8 +61,8 @@ def generate_hgvs_variants(
         >>> alt = SeqRecord(Seq("TPFKISIH"), id="Jelleine-IV", annotations={"molecule_type": "protein"})
         >>> generate_hgvs_variants(ref, alt)
         [
-            SequenceVariant(ac=ref, type=p, posedit=Pro1extThr-1, gene=None),
-            SequenceVariant(ac=ref, type=p, posedit=Leu8del, gene=None),
+            SequenceVariant(ac=Jelleine-I, type=p, posedit=Pro1extThr-1, gene=None),
+            SequenceVariant(ac=Jelleine-I, type=p, posedit=Leu8del, gene=None)
         ]
     """
 
