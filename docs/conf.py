@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 project = 'Palamedes'
-copyright = '2024, Mammoth Bio Open Source'
+copyright = '2024, Mammoth Biosciences'
 author = 'Mammoth Bio Open Source'
 release = 'alpha'
 
