@@ -1,4 +1,4 @@
-from typing import List, NamedTuple
+from typing import NamedTuple
 
 
 class Block(NamedTuple):
@@ -11,7 +11,7 @@ class Block(NamedTuple):
     bases: str
 
     @classmethod
-    def collapse(cls, blocks: List["Block"]) -> "Block":
+    def collapse(cls, blocks: list["Block"]) -> "Block":
         """
         Given a variable length list of blocks, collapse all blocks into one or raise a ValueError if the list is empty.
         Blocks will be sorted but must be adjacent to each-other.
@@ -47,5 +47,5 @@ class VariantBlock(NamedTuple):
     """
 
     alignment_block: Block
-    reference_blocks: List[Block]
-    alternate_blocks: List[Block]
+    reference_blocks: list[Block]
+    alternate_blocks: list[Block]

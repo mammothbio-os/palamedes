@@ -1,10 +1,11 @@
 import logging
 from argparse import ArgumentParser
 
-from palamedes.align import generate_seq_records, generate_alignment, generate_variant_blocks
-from palamedes.config import MOLECULE_TYPE_PROTEIN
-from palamedes.hgvs_utils import categorize_variant_block
-from palamedes.hgvs_builders import BUILDER_CONFIG
+from palamedes.align import generate_seq_record, generate_alignment, generate_variant_blocks
+from palamedes.config import MOLECULE_TYPE_PROTEIN, ALT_SEQUENCE_ID, REF_SEQUENCE_ID
+
+from palamedes.hgvs.utils import categorize_variant_block
+from palamedes.hgvs.builders import BUILDER_CONFIG
 from palamedes.utils import configure_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -12,7 +13,9 @@ LOGGER = logging.getLogger(__name__)
 
 def main() -> None:
     configure_logging()
-    parser = ArgumentParser(description="Generate a variant summary string for an alignment between 2 sequences")
+    parser = ArgumentParser(
+        description="Generate HGVS objects for all variants found in the alignment between 2 sequences",
+    )
     parser.add_argument(
         "ref",
         help="Reference sequence",
@@ -35,8 +38,10 @@ def main() -> None:
     args = parser.parse_args()
     LOGGER.info("Running with args: %s", args)
 
-    ref_seq_record, alt_seq_record = generate_seq_records(args.ref, args.alt, molecule_type=args.molecule_type)
+    ref_seq_record = generate_seq_record(args.ref, REF_SEQUENCE_ID, molecule_type=args.molecule_type)
+    alt_seq_record = generate_seq_record(args.alt, ALT_SEQUENCE_ID, molecule_type=args.molecule_type)
     alignment = generate_alignment(ref_seq_record, alt_seq_record, molecule_type=args.molecule_type)
+
     LOGGER.info("Found best alignment with score = %s", getattr(alignment, "score"))
     LOGGER.info("Alignment:\n%s", str(alignment))
 

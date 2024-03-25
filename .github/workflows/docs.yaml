@@ -1,0 +1,34 @@
+name: docs
+
+"on":
+  workflow_call
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: load pip cache
+        uses: actions/cache@v3
+        timeout-minutes: 5
+        continue-on-error: true
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements_dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      - name: install pip deps
+        run: make install-deps install
+
+      - name: run sphinx
+        run: make sphinx
