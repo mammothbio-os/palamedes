@@ -23,6 +23,7 @@ jobs:
     name: publish to test pypi
     needs: build
     runs-on: ubuntu-latest
+    if: ${{ github.repository == 'mammothbio-os/palamedes' }}
 
     environment:
       name: test-release
