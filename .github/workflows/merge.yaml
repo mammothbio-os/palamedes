@@ -1,0 +1,43 @@
+name: merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yaml
+
+  lint:
+    uses: ./.github/workflows/lint.yaml
+
+  docs:
+    uses: ./.github/workflows/docs.yaml
+
+  build:
+    uses: ./.github/workflows/build.yaml
+
+  test-release:
+    name: publish to test pypi
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: test-release
+      url: https://test.pypi.org/p/palamedes
+
+    permissions:
+      id-token: write
+
+    steps:
+    - name: download build
+      uses: actions/download-artifact@v3
+      with:
+        name: python-package-distributions
+        path: dist/
+
+    - name: publish
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
