@@ -1,4 +1,4 @@
-from sys import stdout
+from sys import stderr
 from unittest import TestCase
 from unittest.mock import ANY, patch
 
@@ -13,22 +13,20 @@ class ConfigureLoggingTestCase(TestCase):
 
     def test_configure_logging(self):
         configure_logging()
-        self.logging_mock.StreamHandler.assert_called_once_with(stdout)
+        self.logging_mock.StreamHandler.assert_called_once_with(stderr)
         self.logging_mock.basicConfig.assert_called_once_with(
-            level=self.logging_mock.INFO,
+            level=self.logging_mock.WARNING,
             format=ANY,
             handlers=[self.logging_mock.StreamHandler()],
-            force=False,
         )
 
-    def test_configure_logging_force(self):
-        configure_logging(force=True)
-        self.logging_mock.StreamHandler.assert_called_once_with(stdout)
+    def test_configure_logging_debug(self):
+        configure_logging(debug=True)
+        self.logging_mock.StreamHandler.assert_called_once_with(stderr)
         self.logging_mock.basicConfig.assert_called_once_with(
-            level=self.logging_mock.INFO,
+            level=self.logging_mock.DEBUG,
             format=ANY,
             handlers=[self.logging_mock.StreamHandler()],
-            force=True,
         )
 
 

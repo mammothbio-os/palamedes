@@ -3,13 +3,12 @@ import sys
 from typing import Iterable
 
 
-def configure_logging(force: bool = False):
-    stdout_handler = logging.StreamHandler(sys.stdout)
+def configure_logging(debug: bool = False) -> None:
+    stderr_handler = logging.StreamHandler(sys.stderr)
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG if debug else logging.WARNING,
         format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
-        handlers=[stdout_handler],
-        force=force,
+        handlers=[stderr_handler],
     )
 
 

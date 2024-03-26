@@ -175,7 +175,7 @@ def generate_alignment(
 
     other_alignments_with_best = [alignment for alignment in alignments if alignment.score == best_alignment_score]
     if len(other_alignments_with_best) > 0:
-        LOGGER.info(
+        LOGGER.debug(
             "Found %s alignments with max score, returning last in the list (3' end rule)",
             len(other_alignments_with_best) + 1,
         )
