@@ -8,6 +8,8 @@ setup(
     url="https://github.com/mammothbio-os/palamedes",
     python_requires=">=3.11",
     description="Palamedes: HGVS variants from a sequence alignment",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     author_email="open-source@mammothbiosci.com",
     entry_points={
         "console_scripts": ["palamedes=palamedes.__main__:main"],
