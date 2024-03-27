@@ -8,7 +8,7 @@ from palamedes.hgvs.utils import categorize_variant_block
 from palamedes.hgvs.builders import BUILDER_CONFIG
 
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 
 def generate_hgvs_variants(
