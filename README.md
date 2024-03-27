@@ -1,7 +1,13 @@
 # palamedes
 
+![Merge - Passing](https://github.com/mammothbio-os/palamedes/actions/workflows/merge.yaml/badge.svg) ![Release - Passing](https://github.com/mammothbio-os/palamedes/actions/workflows/release.yaml/badge.svg) ![PyPI - Version](https://img.shields.io/pypi/v/palamedes) ![Read The Docs - Version](https://readthedocs.org/projects/mammothbio-os-palamedes/badge/?version=stable)
+
 This repo contains a python package and CLI entrypoint which can be used to generate a list of [HGVS](https://github.com/biocommons/hgvs) variants representing the difference between 2 sequences, using a global alignment. The idea is to leverage the HGVS spec for more applications, since it provides a solid framework for maintaining a consistent set of rules and logic
 around variants.
+
+## Documentation
+
+Documentation for the project can be found [here](https://mammothbio-os-palamedes.readthedocs.io/en/stable/)
 
 ## Installing
 
