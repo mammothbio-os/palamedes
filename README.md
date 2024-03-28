@@ -11,7 +11,9 @@ Documentation for the project can be found [here](https://mammothbio-os-palamede
 
 ## Installing
 
-Palamedes is packaged in PyPI, to install simply run: `pip install palamedes`
+Palamedes uses the [hgvs](https://github.com/biocommons/hgvs) package as a dependency. At this time, `hgvs` requires `postgresql` system dependencies to be installed before use. Please see the [README](https://github.com/biocommons/hgvs/blob/main/README.md#installing-hgvs-locally) for install instructions if needed.
+
+Palamedes itself is packaged in PyPI, to install simply run: `pip install palamedes`
 
 ## Usage - CLI
 
