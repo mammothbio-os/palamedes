@@ -36,6 +36,24 @@ def generate_seq_record(sequence: str, seq_id: str, molecule_type: str = MOLECUL
     )
 
 
+def reverse_seq_record(seq_record: SeqRecord) -> SeqRecord:
+    """
+    Helper function to copy a SeqRecord into a new one, with the sequence reversed. This is a best effort copy,
+    which is only used internally to the alignment logic to more easily access the 3' end most representation of
+    the best alignment.
+    """
+    return SeqRecord(
+        Seq("".join(reversed(seq_record.seq))),
+        id=seq_record.id,
+        name=seq_record.name,
+        description=seq_record.description,
+        dbxrefs=seq_record.dbxrefs[:],
+        features=seq_record.features[:],
+        annotations=seq_record.annotations.copy(),
+        letter_annotations=seq_record.letter_annotations.copy(),
+    )
+
+
 def make_variant_base(ref_base: str, alt_base: str) -> str:
     """Helper function to generate the correct variant base given the ref and alt alignment bases"""
     if ref_base == alt_base:
@@ -169,19 +187,30 @@ def generate_alignment(
             f"got: {alt_molecule_type}, expected: {molecule_type}!"
         )
 
-    alignments = aligner.align(reference_seq_record, alternate_seq_record)
-    best_alignment = next(alignments)
-    best_alignment_score = best_alignment.score
+    # reverse the sequences and then align the reversed, keeping the first best alignment
+    reversed_ref_seq_record = reverse_seq_record(reference_seq_record)
+    reversed_alt_seq_record = reverse_seq_record(alternate_seq_record)
+    reversed_alignments = aligner.align(reversed_ref_seq_record, reversed_alt_seq_record)
+    reversed_alignment = reversed_alignments[0]
 
-    other_alignments_with_best = [alignment for alignment in alignments if alignment.score == best_alignment_score]
-    if len(other_alignments_with_best) > 0:
-        LOGGER.debug(
-            "Found %s alignments with max score, returning last in the list (3' end rule)",
-            len(other_alignments_with_best) + 1,
-        )
-        best_alignment = other_alignments_with_best[-1]
+    # undo the reversal, to recover the "last" highest scoring alignment for the forward
+    # which should correspond to the 3' end most alignment and follow HGSV spec
+    # note 'infer_coordinates' will soon be deprecated, update to 'parse_printed_alignment' once its live
+    forward_coordinates = Alignment.infer_coordinates(
+        [
+            reversed_alignment[0][::-1],
+            reversed_alignment[1][::-1],
+        ]
+    )
+    foward_alignment = Alignment(
+        [reference_seq_record, alternate_seq_record],
+        forward_coordinates,
+    )
 
-    return best_alignment
+    # score is not technically an attribute on the class
+    setattr(foward_alignment, "score", reversed_alignment.score)
+
+    return foward_alignment
 
 
 def generate_variant_blocks(alignment: Alignment) -> list[VariantBlock]:

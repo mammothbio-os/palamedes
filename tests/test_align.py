@@ -197,6 +197,57 @@ class GenerateAlignmentTestCase(PalamedesBaseCase):
         alignment = generate_alignment(ref, alt, aligner=custom_aligner)
         self.assertTrue(alignment.score, custom_match_score)
 
+    def test_generate_alignment_three_prime_end_most_del(self):
+        ref, alt = self.make_seq_records(
+            "T" + "A" * 10 + "G",
+            "T" + "A" * 9 + "G",
+        )
+
+        alignment = generate_alignment(ref, alt)
+
+        # ensure we get the ref unchanged
+        # and the last A deleted, not any others
+        self.assertEqual(alignment[0], ref.seq)
+        self.assertEqual(alignment[1], "T" + "A" * 9 + "-G")
+
+    def test_generate_alignment_three_prime_end_most_double_del(self):
+        ref, alt = self.make_seq_records(
+            "ATTGCCA",
+            "ATGCA",
+        )
+
+        alignment = generate_alignment(ref, alt)
+
+        # ensure we get the ref unchanged
+        # and the second of each paired based deleted
+        self.assertEqual(alignment[0], ref.seq)
+        self.assertEqual(alignment[1], "AT-GC-A")
+
+    def test_generate_alignment_three_prime_end_most_ins(self):
+        ref, alt = self.make_seq_records(
+            "T" + "A" * 9 + "G",
+            "T" + "A" * 10 + "G",
+        )
+
+        alignment = generate_alignment(ref, alt)
+
+        # ensure we get the alt unchanged
+        # and the insertion happens after the last A in the ref
+        self.assertEqual(alignment[0], "T" + "A" * 9 + "-G")
+        self.assertEqual(alignment[1], alt.seq)
+
+    def test_generate_alignment_three_prime_end_most_double_ins(self):
+        ref, alt = self.make_seq_records(
+            "ATGCA",
+            "ATTGCCA",
+        )
+        alignment = generate_alignment(ref, alt)
+
+        # ensure we get the alt unchanged
+        # and the insertion happens after the last A in the ref
+        self.assertEqual(alignment[0], "AT-GC-A")
+        self.assertEqual(alignment[1], alt.seq)
+
 
 class GenerateVariantBlocksTestCase(PalamedesBaseCase):
     def test_generate_variant_blocks_all_matches(self):
