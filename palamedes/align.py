@@ -43,7 +43,7 @@ def reverse_seq_record(seq_record: SeqRecord) -> SeqRecord:
     the best alignment.
     """
     return SeqRecord(
-        Seq("".join(reversed(seq_record.seq))),
+        Seq(seq_record.seq[::-1]),
         id=seq_record.id,
         name=seq_record.name,
         description=seq_record.description,
