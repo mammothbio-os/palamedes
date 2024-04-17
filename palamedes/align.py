@@ -202,15 +202,15 @@ def generate_alignment(
             reversed_alignment[1][::-1],
         ]
     )
-    foward_alignment = Alignment(
+    forward_alignment = Alignment(
         [reference_seq_record, alternate_seq_record],
         forward_coordinates,
     )
 
     # score is not technically an attribute on the class
-    setattr(foward_alignment, "score", reversed_alignment.score)
+    setattr(forward_alignment, "score", reversed_alignment.score)
 
-    return foward_alignment
+    return forward_alignment
 
 
 def generate_variant_blocks(alignment: Alignment) -> list[VariantBlock]:
