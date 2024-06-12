@@ -1,5 +1,5 @@
 import logging
-from functools import reduce
+from functools import reduce, partial
 
 from Bio.Align import Alignment, PairwiseAligner
 from Bio.Seq import Seq
@@ -106,11 +106,30 @@ def merge_variant_blocks(left: VariantBlock, right: VariantBlock) -> VariantBloc
     return VariantBlock(new_alignment_block, new_reference_blocks, new_alternate_blocks)
 
 
-def merge_reduce(blocks: list[VariantBlock], next_block: VariantBlock) -> list[VariantBlock]:
-    """Helper function to implement merge or append, passed to functools.reduce to merge blocks"""
+def merge_reduce(
+    blocks: list[VariantBlock], next_block: VariantBlock, split_consecutive_mismatches: bool = False
+) -> list[VariantBlock]:
+    """
+    Helper function to implement merge or append, passed to functools.reduce to merge blocks. Optional
+    split_consecutive_mismatches will keep consecutive mismatches from being merged, allowing for a
+    chain of mismatches vs a delins. Note that this is non-standard behavior according to HGVS.
+    """
     peek_block = blocks[-1]
 
-    if can_merge_variant_blocks(peek_block, next_block):
+    # base check for merge-ability
+    base_can_merge = can_merge_variant_blocks(peek_block, next_block)
+
+    # extra check for flag, merge if false OR merge if true and left and right
+    # are not single bp mismatches. If true and both are single base mismatches
+    # then we do not merge, this 'splitting'
+    mismatch_split_can_merge = not split_consecutive_mismatches or all(
+        [
+            peek_block.alignment_block.bases != VARIANT_BASE_MISMATCH,
+            next_block.alignment_block.bases != VARIANT_BASE_MISMATCH,
+        ]
+    )
+
+    if base_can_merge and mismatch_split_can_merge:
         blocks[-1] = merge_variant_blocks(peek_block, next_block)
     else:
         blocks.append(next_block)
@@ -213,7 +232,7 @@ def generate_alignment(
     return forward_alignment
 
 
-def generate_variant_blocks(alignment: Alignment) -> list[VariantBlock]:
+def generate_variant_blocks(alignment: Alignment, split_consecutive_mismatches: bool = False) -> list[VariantBlock]:
     """
     Given a BioPython.Alignment object, parse the alignment to generate a list of VariantBlock objects.
     A VariantBlock is an internal object which represents a contiguous run of positions within the alignment
@@ -258,7 +277,8 @@ def generate_variant_blocks(alignment: Alignment) -> list[VariantBlock]:
     ]
 
     # use reduce with a helper function to merge valid/adjacent blocks together
-    merged_blocks = reduce(merge_reduce, single_position_variant_blocks[1:], [single_position_variant_blocks[0]])
+    wrapped_merge_func = partial(merge_reduce, split_consecutive_mismatches=split_consecutive_mismatches)
+    merged_blocks = reduce(wrapped_merge_func, single_position_variant_blocks[1:], [single_position_variant_blocks[0]])
 
     # filter out the matches
     return [
