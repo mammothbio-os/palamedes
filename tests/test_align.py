@@ -318,3 +318,46 @@ class GenerateVariantBlocksTestCase(PalamedesBaseCase):
         )
         self.assertEqual(variant_blocks[1].reference_blocks, [Block(3, 4, "T")])
         self.assertEqual(variant_blocks[1].alternate_blocks, [Block(2, 5, "GAA")])
+
+    def test_generate_variant_blocks_split_subs(self):
+        alignment = self.make_alignment(
+            "AAAA",
+            "TTTT",
+        )
+        variant_blocks = generate_variant_blocks(alignment, split_consecutive_mismatches=True)
+
+        self.assertEqual(len(variant_blocks), 4)
+        for idx, block in enumerate(variant_blocks):
+            expected_start = idx
+            expecte_end = idx + 1
+            self.assertEqual(block.alignment_block, Block(expected_start, expecte_end, VARIANT_BASE_MISMATCH))
+            self.assertEqual(block.reference_blocks, [Block(expected_start, expecte_end, "A")])
+            self.assertEqual(block.alternate_blocks, [Block(expected_start, expecte_end, "T")])
+
+    def test_generate_variant_blocks_no_split_indels(self):
+        """Test split flag does not change how actual indels are treated"""
+        alignment = self.make_alignment(
+            "AAAA---",
+            "---TTTT",
+        )
+        variant_blocks = generate_variant_blocks(alignment, split_consecutive_mismatches=True)
+        self.assertEqual(len(variant_blocks), 1)
+
+        self.assertEqual(
+            variant_blocks[0].alignment_block,
+            Block(
+                0,
+                7,
+                "".join(
+                    [
+                        VARIANT_BASE_DELETION,
+                        VARIANT_BASE_DELETION,
+                        VARIANT_BASE_DELETION,
+                        VARIANT_BASE_MISMATCH,
+                        VARIANT_BASE_INSERTION,
+                        VARIANT_BASE_INSERTION,
+                        VARIANT_BASE_INSERTION,
+                    ]
+                ),
+            ),
+        )

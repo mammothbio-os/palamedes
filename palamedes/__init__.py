@@ -8,7 +8,7 @@ from palamedes.hgvs.utils import categorize_variant_block
 from palamedes.hgvs.builders import BUILDER_CONFIG
 
 
-__version__ = "0.0.4"
+__version__ = "0.0.6"
 
 
 def generate_hgvs_variants(
@@ -16,6 +16,7 @@ def generate_hgvs_variants(
     alternate_sequence: str | SeqRecord,
     molecule_type: str = MOLECULE_TYPE_PROTEIN,
     aligner: PairwiseAligner | None = None,
+    use_non_standard_substitution_rules: bool = False,
 ) -> list[SequenceVariant]:
     """
     Given the reference and alternate sequences, as either strings or `Bio.SeqRecord.SeqRecord` objects, compute the
@@ -32,6 +33,10 @@ def generate_hgvs_variants(
     - mismatch score: `-1`
     - open gap score: `-1`
     - extend gap score: `-0.1`
+
+    An optional flag: `use_non_standard_substitution_rules` can be passed as `True`, which will enable logic that treats
+    multiple consecutive mismatches as seperare subsitutions, vs merging together into a delins. This is against HGVS
+    spec but has utility for some use cases.
 
     If using pre-built `SeqRecord` objects, be sure to set the `molecule_type` annotation key to a supported molecule type
     and pass in the corresponding molecule_type as an input. At the time of writing, only `protein` is supported as a
@@ -80,7 +85,10 @@ def generate_hgvs_variants(
     )
 
     alignment = generate_alignment(ref_seq_record, alt_seq_record, molecule_type=molecule_type, aligner=aligner)
-    variant_blocks = generate_variant_blocks(alignment)
+    variant_blocks = generate_variant_blocks(
+        alignment,
+        split_consecutive_mismatches=use_non_standard_substitution_rules,
+    )
     builder = BUILDER_CONFIG[molecule_type](alignment)
     return [
         builder.build(
