@@ -119,17 +119,18 @@ def merge_reduce(
     # base check for merge-ability
     base_can_merge = can_merge_variant_blocks(peek_block, next_block)
 
-    # extra check for flag, merge if false OR merge if true and left and right
+    # extra check for flag, merge if false OR merge if true and one of  left and right
     # are not single bp mismatches. If true and both are single base mismatches
     # then we do not merge, this 'splitting'
-    mismatch_split_can_merge = not split_consecutive_mismatches or all(
+    should_split_mismatches = all(
         [
-            peek_block.alignment_block.bases != VARIANT_BASE_MISMATCH,
-            next_block.alignment_block.bases != VARIANT_BASE_MISMATCH,
+            split_consecutive_mismatches,
+            peek_block.alignment_block.bases == VARIANT_BASE_MISMATCH,
+            next_block.alignment_block.bases == VARIANT_BASE_MISMATCH,
         ]
     )
 
-    if base_can_merge and mismatch_split_can_merge:
+    if base_can_merge and not should_split_mismatches:
         blocks[-1] = merge_variant_blocks(peek_block, next_block)
     else:
         blocks.append(next_block)
