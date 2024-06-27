@@ -26,10 +26,12 @@ def generate_hgvs_variants_from_alignment(
     Given a pairwise alignment object and a molecule type, generate a list of HGVS SequenceVariants.
 
     - Alignment: Generated via BioPython.PairwiseAligner - (`generate_alignment` for more information)
+
     - molecule_type: Currently only molecule type 'protein' is supported.
-    - An optional flag: `use_non_standard_substitution_rules` can be passed as `True`, which will enable logic that treats
+
+    - An optional flag: `use_non_standard_substitution_rules` is a boolean flag which will enable logic that treats
     multiple consecutive mismatches as separate subsitutions, vs merging together into a delins. This is against HGVS
-    spec but has utility for some use cases. For more information see `generate_alignment`
+    spec but has utility for some use cases.
 
 
     """

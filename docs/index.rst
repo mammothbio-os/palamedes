@@ -14,3 +14,5 @@
 API
 ==========
 .. autofunction:: palamedes.generate_hgvs_variants
+.. autofunction:: palamedes.generate_hgvs_variants_from_alignment
+.. autofunction:: palamedes.generate_alignment
