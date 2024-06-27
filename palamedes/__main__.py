@@ -3,7 +3,8 @@ from argparse import ArgumentParser
 
 from Bio.Align import PairwiseAligner
 
-from palamedes.align import generate_seq_record, generate_alignment, generate_variant_blocks
+from palamedes import generate_alignment, generate_variant_blocks
+from palamedes.align import generate_seq_record
 from palamedes.config import MOLECULE_TYPE_PROTEIN, ALT_SEQUENCE_ID, REF_SEQUENCE_ID
 from palamedes import __version__
 from palamedes.hgvs.utils import categorize_variant_block

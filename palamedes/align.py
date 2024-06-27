@@ -1,17 +1,12 @@
 import logging
 from functools import reduce, partial
 
-from Bio.Align import Alignment, PairwiseAligner
+from Bio.Align import Alignment
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
 from palamedes.config import (
     ALIGNMENT_GAP_CHAR,
-    DEFAULT_EXTEND_GAP_SCORE,
-    DEFAULT_MATCH_SCORE,
-    DEFAULT_MISMATCH_SCORE,
-    DEFAULT_OPEN_GAP_SCORE,
-    GLOBAL_ALIGN_MODE,
     VARIANT_BASE_DELETION,
     VARIANT_BASE_INSERTION,
     VARIANT_BASE_MATCH,

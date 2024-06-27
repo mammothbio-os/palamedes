@@ -2,11 +2,19 @@ from Bio.Align import PairwiseAligner, Alignment
 from Bio.SeqRecord import SeqRecord
 from hgvs.sequencevariant import SequenceVariant
 
-from palamedes.config import MOLECULE_TYPE_PROTEIN, ALT_SEQUENCE_ID, REF_SEQUENCE_ID
-from palamedes.align import generate_seq_record, generate_alignment, generate_variant_blocks
+from palamedes.align import generate_seq_record, generate_variant_blocks, reverse_seq_record
 from palamedes.hgvs.utils import categorize_variant_block
 from palamedes.hgvs.builders import BUILDER_CONFIG
-
+from palamedes.config import (
+    DEFAULT_EXTEND_GAP_SCORE,
+    DEFAULT_MATCH_SCORE,
+    DEFAULT_MISMATCH_SCORE,
+    DEFAULT_OPEN_GAP_SCORE,
+    GLOBAL_ALIGN_MODE,
+    MOLECULE_TYPE_PROTEIN,
+     ALT_SEQUENCE_ID,
+     REF_SEQUENCE_ID,
+)
 
 __version__ = "0.0.8"
 
@@ -14,6 +22,20 @@ __version__ = "0.0.8"
 def generate_hgvs_variants_from_alignment(
     alignment: Alignment, use_non_standard_substitution_rules: bool = False, molecule_type: str = MOLECULE_TYPE_PROTEIN
 ) -> list[SequenceVariant]:
+    """
+    Given a pairwise alignment object and a molecule type, generate a list of HGVS SequenceVariants.
+
+    - Alignment: Generated via BioPython.PairwiseAligner - (`generate_alignment` for more information)
+    - molecule_type: Currently only molecule type 'protein' is supported.
+    - An optional flag: `use_non_standard_substitution_rules` can be passed as `True`, which will enable logic that treats
+    multiple consecutive mismatches as separate subsitutions, vs merging together into a delins. This is against HGVS
+    spec but has utility for some use cases. For more information see `generate_alignment`
+
+
+    """
+    if molecule_type not in BUILDER_CONFIG:
+        raise NotImplementedError(f"No HGVS builder is defined for molecule_type: {molecule_type}!")
+
     variant_blocks = generate_variant_blocks(
         alignment,
         split_consecutive_mismatches=use_non_standard_substitution_rules,
@@ -147,7 +169,7 @@ def generate_hgvs_variants(
     - extend gap score: `-0.1`
 
     An optional flag: `use_non_standard_substitution_rules` can be passed as `True`, which will enable logic that treats
-    multiple consecutive mismatches as seperare subsitutions, vs merging together into a delins. This is against HGVS
+    multiple consecutive mismatches as separate subsitutions, vs merging together into a delins. This is against HGVS
     spec but has utility for some use cases.
 
     If using pre-built `SeqRecord` objects, be sure to set the `molecule_type` annotation key to a supported molecule type
@@ -182,7 +204,9 @@ def generate_hgvs_variants(
     """
 
     if molecule_type not in BUILDER_CONFIG:
-        raise NotImplementedError(f"No HGVS builder is defined for molecule_type: {molecule_type}!")
+        raise NotImplementedError(
+            f"Type {molecule_type} unsupported or unrecognized! Current supported types: {','.join(BUILDER_CONFIG.keys())}"
+        )
 
     ref_seq_record = (
         generate_seq_record(reference_sequence, REF_SEQUENCE_ID, molecule_type=molecule_type)
@@ -197,4 +221,4 @@ def generate_hgvs_variants(
     )
 
     alignment = generate_alignment(ref_seq_record, alt_seq_record, molecule_type=molecule_type, aligner=aligner)
-    return generate_hgvs_variants_from_alignment(alignment, use_non_standard_substitution_rules)
+    return generate_hgvs_variants_from_alignment(alignment, use_non_standard_substitution_rules, molecule_type)
