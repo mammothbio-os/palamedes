@@ -16,7 +16,7 @@ from palamedes.config import (
     REF_SEQUENCE_ID,
 )
 
-__version__ = "0.0.8"
+__version__ = "0.0.9"
 
 
 def generate_hgvs_variants_from_alignment(
