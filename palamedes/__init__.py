@@ -25,15 +25,26 @@ def generate_hgvs_variants_from_alignment(
     """
     Given a pairwise alignment object and a molecule type, generate a list of HGVS SequenceVariants.
 
-    - Alignment: Generated via BioPython.PairwiseAligner - (`generate_alignment` for more information)
+    - Alignment: Generated via BioPython.PairwiseAligner - (See `generate_alignment` for more information)
 
     - molecule_type: Currently only molecule type 'protein' is supported.
 
-    - An optional flag: `use_non_standard_substitution_rules` is a boolean flag which will enable logic that treats
-    multiple consecutive mismatches as separate subsitutions, vs merging together into a delins. This is against HGVS
+    - An optional flag: `use_non_standard_substitution_rules` is a boolean flag which will enable logic that treats multiple consecutive mismatches as separate subsitutions, vs merging together into a delins. This is against HGVS
     spec but has utility for some use cases.
 
+    .. code-block:: python
 
+        >>> from Bio.Seq import Seq
+        >>> from Bio.SeqRecord import SeqRecord
+        >>> from palamedes import generate_hgvs_variants_from_alignment, generate_alignment
+        >>> ref = SeqRecord(Seq("PFKISIHL"), id="Jelleine-I", annotations={"molecule_type": "protein"})
+        >>> alt = SeqRecord(Seq("TPFKISIH"), id="Jelleine-IV", annotations={"molecule_type": "protein"})
+        >>> alignment = generate_alignment(ref, alt)
+        >>> generate_hgvs_variants_from_alignment(alignment)
+        [
+            SequenceVariant(ac=Jelleine-I, type=p, posedit=Pro1extThr-1, gene=None),
+            SequenceVariant(ac=Jelleine-I, type=p, posedit=Leu8del, gene=None)
+        ]
     """
     if molecule_type not in BUILDER_CONFIG:
         raise NotImplementedError(f"No HGVS builder is defined for molecule_type: {molecule_type}!")
@@ -96,6 +107,16 @@ def generate_alignment(
     Due to the HGVS rule of always indicating that the 3' most base is considered the modified one, a best effort
     attempt is made to return the most "right aligned" alignment, by returning the last alignment with the highest
     score. This way not yield the ideal results in more complicated cases.
+
+    .. code-block:: python
+
+        >>> from Bio.Seq import Seq
+        >>> from Bio.SeqRecord import SeqRecord
+        >>> from palamedes import generate_alignment
+        >>> ref = SeqRecord(Seq("PFKISIHL"), id="Jelleine-I", annotations={"molecule_type": "protein"})
+        >>> alt = SeqRecord(Seq("TPFKISIH"), id="Jelleine-IV", annotations={"molecule_type": "protein"})
+        >>> generate_alignment(ref, alt)
+        <Alignment object (2 rows x 9 columns) at ...>
     """
     if aligner is not None:
         if aligner.mode != GLOBAL_ALIGN_MODE:

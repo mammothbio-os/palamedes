@@ -152,3 +152,116 @@ class MergeVariantBlocksTestCase(PalamedesBaseCase):
         self.assertEqual(
             merged.alternate_blocks[0].bases, left.alternate_blocks[0].bases + right.alternate_blocks[0].bases
         )
+
+class GenerateVariantBlocksTestCase(PalamedesBaseCase):
+    def test_generate_variant_blocks_all_matches(self):
+        alignment = self.make_alignment("A" * 5, "A" * 5)
+        self.assertEqual(generate_variant_blocks(alignment), [])
+
+    def test_generate_variant_blocks_all_matches_single_mismatch(self):
+        alignment = self.make_alignment("ACT", "AGT")
+        variant_blocks = generate_variant_blocks(alignment)
+
+        self.assertEqual(len(variant_blocks), 1)
+        self.assertEqual(variant_blocks[0].alignment_block, Block(1, 2, VARIANT_BASE_MISMATCH))
+        self.assertEqual(variant_blocks[0].reference_blocks, [Block(1, 2, "C")])
+        self.assertEqual(variant_blocks[0].alternate_blocks, [Block(1, 2, "G")])
+
+    def test_generate_variant_blocks_merging(self):
+        """
+        Test an alignment with a 3 position variant in order, deletion -> mismatch -> insertion
+            A T C - T
+            A - G A T
+           0 1 2 3 4 5 GLOBAL
+           0 1 2 3 . 4 REF
+           0 . 1 2 3 4 ALT
+        """
+        alignment = self.make_alignment(
+            "ATC-T",
+            "A-GAT",
+        )
+        variant_blocks = generate_variant_blocks(alignment)
+
+        self.assertEqual(len(variant_blocks), 1)
+        self.assertEqual(
+            variant_blocks[0].alignment_block,
+            Block(1, 4, "".join([VARIANT_BASE_DELETION, VARIANT_BASE_MISMATCH, VARIANT_BASE_INSERTION])),
+        )
+        self.assertEqual(variant_blocks[0].reference_blocks, [Block(1, 3, "TC")])
+        self.assertEqual(variant_blocks[0].alternate_blocks, [Block(1, 3, "GA")])
+
+    def test_generate_variant_blocks_complex(self):
+        """
+        Test an alignment with a number of variants, some merged and some not
+            A T C T - - T
+            A - C G A A T
+           0 1 2 3 4 5 6 7 GLOBAL
+           0 1 2 3 4 . . 6 REF
+           0 . 1 2 3 4 5 6 ALT
+
+        The full "variant bases" would be: MdMmiiM
+        """
+        alignment = self.make_alignment(
+            "ATCT--T",
+            "A-CGAAT",
+        )
+        variant_blocks = generate_variant_blocks(alignment)
+
+        # mii gets merged so 2 total
+        self.assertEqual(len(variant_blocks), 2)
+        self.assertEqual(
+            variant_blocks[0].alignment_block,
+            Block(1, 2, VARIANT_BASE_DELETION),
+        )
+        self.assertEqual(variant_blocks[0].reference_blocks, [Block(1, 2, "T")])
+        self.assertEqual(variant_blocks[0].alternate_blocks, [])
+
+        self.assertEqual(
+            variant_blocks[1].alignment_block,
+            Block(3, 6, "".join([VARIANT_BASE_MISMATCH, VARIANT_BASE_INSERTION, VARIANT_BASE_INSERTION])),
+        )
+        self.assertEqual(variant_blocks[1].reference_blocks, [Block(3, 4, "T")])
+        self.assertEqual(variant_blocks[1].alternate_blocks, [Block(2, 5, "GAA")])
+
+    def test_generate_variant_blocks_split_subs(self):
+        alignment = self.make_alignment(
+            "AAAA",
+            "TTTT",
+        )
+        variant_blocks = generate_variant_blocks(alignment, split_consecutive_mismatches=True)
+
+        self.assertEqual(len(variant_blocks), 4)
+        for idx, block in enumerate(variant_blocks):
+            expected_start = idx
+            expecte_end = idx + 1
+            self.assertEqual(block.alignment_block, Block(expected_start, expecte_end, VARIANT_BASE_MISMATCH))
+            self.assertEqual(block.reference_blocks, [Block(expected_start, expecte_end, "A")])
+            self.assertEqual(block.alternate_blocks, [Block(expected_start, expecte_end, "T")])
+
+    def test_generate_variant_blocks_no_split_indels(self):
+        """Test split flag does not change how actual indels are treated"""
+        alignment = self.make_alignment(
+            "AAAA---",
+            "---TTTT",
+        )
+        variant_blocks = generate_variant_blocks(alignment, split_consecutive_mismatches=True)
+        self.assertEqual(len(variant_blocks), 1)
+
+        self.assertEqual(
+            variant_blocks[0].alignment_block,
+            Block(
+                0,
+                7,
+                "".join(
+                    [
+                        VARIANT_BASE_DELETION,
+                        VARIANT_BASE_DELETION,
+                        VARIANT_BASE_DELETION,
+                        VARIANT_BASE_MISMATCH,
+                        VARIANT_BASE_INSERTION,
+                        VARIANT_BASE_INSERTION,
+                        VARIANT_BASE_INSERTION,
+                    ]
+                ),
+            ),
+        )

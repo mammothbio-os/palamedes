@@ -1,4 +1,4 @@
-from palamedes import generate_variant_blocks, generate_alignment
+from palamedes import generate_alignment, generate_hgvs_variants_from_alignment
 from palamedes.config import (
     VARIANT_BASE_INSERTION,
     VARIANT_BASE_DELETION,
@@ -10,6 +10,29 @@ from palamedes.config import (
 from Bio.Align import Alignment, PairwiseAligner
 from palamedes.models import Block
 from tests.base import PalamedesBaseCase
+
+class GenerateHGVSVariantsFromAlignmentTestCase(PalamedesBaseCase):
+    def test_generate_hgvs_variants_from_alignment(self):
+        ref, alt = self.make_seq_records(
+            "ATGCA",
+            "ATTGCCA",
+        )
+        alignment = generate_alignment(ref, alt)
+
+        # ensure we get the alt unchanged
+        # and the insertion happens after the last A in the ref
+        self.assertEqual(alignment[0], "AT-GC-A")
+        self.assertEqual(alignment[1], alt.seq)
+
+        variant_blocks = generate_hgvs_variants_from_alignment(alignment)
+        
+
+
+    def test_generate_hgvs_variants_from_alignment_molecule_type_error(self):
+        with self.assertRaisesRegex(ValueError, f"expected: {MOLECULE_TYPE_PROTEIN}"):
+            generate_alignment(ref, alt)
+
+    def test_generate_hgvs_variants_from_alignment(self):
 
 
 class GenerateAlignmentTestCase(PalamedesBaseCase):
@@ -100,117 +123,3 @@ class GenerateAlignmentTestCase(PalamedesBaseCase):
         # and the insertion happens after the last A in the ref
         self.assertEqual(alignment[0], "AT-GC-A")
         self.assertEqual(alignment[1], alt.seq)
-
-
-class GenerateVariantBlocksTestCase(PalamedesBaseCase):
-    def test_generate_variant_blocks_all_matches(self):
-        alignment = self.make_alignment("A" * 5, "A" * 5)
-        self.assertEqual(generate_variant_blocks(alignment), [])
-
-    def test_generate_variant_blocks_all_matches_single_mismatch(self):
-        alignment = self.make_alignment("ACT", "AGT")
-        variant_blocks = generate_variant_blocks(alignment)
-
-        self.assertEqual(len(variant_blocks), 1)
-        self.assertEqual(variant_blocks[0].alignment_block, Block(1, 2, VARIANT_BASE_MISMATCH))
-        self.assertEqual(variant_blocks[0].reference_blocks, [Block(1, 2, "C")])
-        self.assertEqual(variant_blocks[0].alternate_blocks, [Block(1, 2, "G")])
-
-    def test_generate_variant_blocks_merging(self):
-        """
-        Test an alignment with a 3 position variant in order, deletion -> mismatch -> insertion
-            A T C - T
-            A - G A T
-           0 1 2 3 4 5 GLOBAL
-           0 1 2 3 . 4 REF
-           0 . 1 2 3 4 ALT
-        """
-        alignment = self.make_alignment(
-            "ATC-T",
-            "A-GAT",
-        )
-        variant_blocks = generate_variant_blocks(alignment)
-
-        self.assertEqual(len(variant_blocks), 1)
-        self.assertEqual(
-            variant_blocks[0].alignment_block,
-            Block(1, 4, "".join([VARIANT_BASE_DELETION, VARIANT_BASE_MISMATCH, VARIANT_BASE_INSERTION])),
-        )
-        self.assertEqual(variant_blocks[0].reference_blocks, [Block(1, 3, "TC")])
-        self.assertEqual(variant_blocks[0].alternate_blocks, [Block(1, 3, "GA")])
-
-    def test_generate_variant_blocks_complex(self):
-        """
-        Test an alignment with a number of variants, some merged and some not
-            A T C T - - T
-            A - C G A A T
-           0 1 2 3 4 5 6 7 GLOBAL
-           0 1 2 3 4 . . 6 REF
-           0 . 1 2 3 4 5 6 ALT
-
-        The full "variant bases" would be: MdMmiiM
-        """
-        alignment = self.make_alignment(
-            "ATCT--T",
-            "A-CGAAT",
-        )
-        variant_blocks = generate_variant_blocks(alignment)
-
-        # mii gets merged so 2 total
-        self.assertEqual(len(variant_blocks), 2)
-        self.assertEqual(
-            variant_blocks[0].alignment_block,
-            Block(1, 2, VARIANT_BASE_DELETION),
-        )
-        self.assertEqual(variant_blocks[0].reference_blocks, [Block(1, 2, "T")])
-        self.assertEqual(variant_blocks[0].alternate_blocks, [])
-
-        self.assertEqual(
-            variant_blocks[1].alignment_block,
-            Block(3, 6, "".join([VARIANT_BASE_MISMATCH, VARIANT_BASE_INSERTION, VARIANT_BASE_INSERTION])),
-        )
-        self.assertEqual(variant_blocks[1].reference_blocks, [Block(3, 4, "T")])
-        self.assertEqual(variant_blocks[1].alternate_blocks, [Block(2, 5, "GAA")])
-
-    def test_generate_variant_blocks_split_subs(self):
-        alignment = self.make_alignment(
-            "AAAA",
-            "TTTT",
-        )
-        variant_blocks = generate_variant_blocks(alignment, split_consecutive_mismatches=True)
-
-        self.assertEqual(len(variant_blocks), 4)
-        for idx, block in enumerate(variant_blocks):
-            expected_start = idx
-            expecte_end = idx + 1
-            self.assertEqual(block.alignment_block, Block(expected_start, expecte_end, VARIANT_BASE_MISMATCH))
-            self.assertEqual(block.reference_blocks, [Block(expected_start, expecte_end, "A")])
-            self.assertEqual(block.alternate_blocks, [Block(expected_start, expecte_end, "T")])
-
-    def test_generate_variant_blocks_no_split_indels(self):
-        """Test split flag does not change how actual indels are treated"""
-        alignment = self.make_alignment(
-            "AAAA---",
-            "---TTTT",
-        )
-        variant_blocks = generate_variant_blocks(alignment, split_consecutive_mismatches=True)
-        self.assertEqual(len(variant_blocks), 1)
-
-        self.assertEqual(
-            variant_blocks[0].alignment_block,
-            Block(
-                0,
-                7,
-                "".join(
-                    [
-                        VARIANT_BASE_DELETION,
-                        VARIANT_BASE_DELETION,
-                        VARIANT_BASE_DELETION,
-                        VARIANT_BASE_MISMATCH,
-                        VARIANT_BASE_INSERTION,
-                        VARIANT_BASE_INSERTION,
-                        VARIANT_BASE_INSERTION,
-                    ]
-                ),
-            ),
-        )
