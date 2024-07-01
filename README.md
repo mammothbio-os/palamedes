@@ -37,8 +37,7 @@ alt               0 TPFKISIH- 8
 
 ## Usage - Python
 
-Palamedes currently includes a single public function that provides the alignment to HGVS functionality. All other functions should
-be treated as internal and private. No assurances are offered for their consistency and functionality from version to version. The function accepts either raw sequences or biopython `SeqRecord` objects.
+Palamedes currently includes public functions in `__init__.py` that provide the alignment to HGVS functionality. All other functions should be treated as internal and private. No assurances are offered for their consistency and functionality from version to version. 
 
 ```python
 >>> from Bio.Seq import Seq
