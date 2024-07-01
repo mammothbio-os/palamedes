@@ -1,17 +1,15 @@
 from palamedes import generate_alignment, generate_hgvs_variants_from_alignment
 from palamedes.config import (
-    VARIANT_BASE_INSERTION,
-    VARIANT_BASE_DELETION,
-    VARIANT_BASE_MISMATCH,
     MOLECULE_TYPE_PROTEIN,
     MOLECULE_TYPE_ANNOTATION_KEY,
     GLOBAL_ALIGN_MODE,
 )
 from Bio.Align import Alignment, PairwiseAligner
-from palamedes.models import Block
 from tests.base import PalamedesBaseCase
+from tests.hgvs.test_builders import HgvsProteinBuilderTestCase
 
-class GenerateHGVSVariantsFromAlignmentTestCase(PalamedesBaseCase):
+
+class GenerateHGVSVariantsFromAlignmentTestCase(HgvsProteinBuilderTestCase):
     def test_generate_hgvs_variants_from_alignment(self):
         ref, alt = self.make_seq_records(
             "ATGCA",
@@ -25,14 +23,28 @@ class GenerateHGVSVariantsFromAlignmentTestCase(PalamedesBaseCase):
         self.assertEqual(alignment[1], alt.seq)
 
         variant_blocks = generate_hgvs_variants_from_alignment(alignment)
-        
 
+        self.assert_variant_string_matches(
+            variant_blocks[0],
+            "T2dup",
+        )
+
+        self.assert_variant_string_matches(
+            variant_blocks[1],
+            "C4dup",
+        )
 
     def test_generate_hgvs_variants_from_alignment_molecule_type_error(self):
-        with self.assertRaisesRegex(ValueError, f"expected: {MOLECULE_TYPE_PROTEIN}"):
-            generate_alignment(ref, alt)
-
-    def test_generate_hgvs_variants_from_alignment(self):
+        bad_molecule_type = "FAKE"
+        with self.assertRaisesRegex(
+            NotImplementedError, f"No HGVS builder is defined for molecule_type: {bad_molecule_type}!"
+        ):
+            ref, alt = self.make_seq_records(
+                "ATGCA",
+                "ATTGCCA",
+            )
+            alignment = generate_alignment(ref, alt)
+            generate_hgvs_variants_from_alignment(alignment, molecule_type=bad_molecule_type)
 
 
 class GenerateAlignmentTestCase(PalamedesBaseCase):

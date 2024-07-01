@@ -12,8 +12,8 @@ from palamedes.config import (
     DEFAULT_OPEN_GAP_SCORE,
     GLOBAL_ALIGN_MODE,
     MOLECULE_TYPE_PROTEIN,
-     ALT_SEQUENCE_ID,
-     REF_SEQUENCE_ID,
+    ALT_SEQUENCE_ID,
+    REF_SEQUENCE_ID,
 )
 
 __version__ = "0.0.8"

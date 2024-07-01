@@ -3,6 +3,7 @@ from palamedes.align import (
     can_merge_variant_blocks,
     merge_variant_blocks,
     generate_seq_record,
+    generate_variant_blocks,
 )
 from palamedes.config import (
     REF_SEQUENCE_ID,
@@ -152,6 +153,7 @@ class MergeVariantBlocksTestCase(PalamedesBaseCase):
         self.assertEqual(
             merged.alternate_blocks[0].bases, left.alternate_blocks[0].bases + right.alternate_blocks[0].bases
         )
+
 
 class GenerateVariantBlocksTestCase(PalamedesBaseCase):
     def test_generate_variant_blocks_all_matches(self):
