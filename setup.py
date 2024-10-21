@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-version = "0.0.4"
+version = "0.0.9"
 
 setup(
     name="palamedes",
