@@ -12,6 +12,7 @@ from palamedes.config import (
     VARIANT_BASE_MATCH,
     VARIANT_BASE_MISMATCH,
     MOLECULE_TYPE_PROTEIN,
+    MOLECULE_TYPE_DNA,
     MOLECULE_TYPE_ANNOTATION_KEY,
 )
 from palamedes.models import Block, VariantBlock

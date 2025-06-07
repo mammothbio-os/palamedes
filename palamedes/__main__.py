@@ -5,7 +5,7 @@ from Bio.Align import PairwiseAligner
 
 from palamedes import generate_alignment, generate_variant_blocks
 from palamedes.align import generate_seq_record
-from palamedes.config import MOLECULE_TYPE_PROTEIN, ALT_SEQUENCE_ID, REF_SEQUENCE_ID
+from palamedes.config import MOLECULE_TYPE_PROTEIN, MOLECULE_TYPE_DNA, ALT_SEQUENCE_ID, REF_SEQUENCE_ID
 from palamedes import __version__
 from palamedes.hgvs.utils import categorize_variant_block
 from palamedes.hgvs.builders import BUILDER_CONFIG
@@ -52,7 +52,7 @@ def main() -> None:
     parser.add_argument(
         "--molecule-type",
         help="Molecule type to use",
-        choices=(MOLECULE_TYPE_PROTEIN,),
+        choices=(MOLECULE_TYPE_PROTEIN, MOLECULE_TYPE_DNA),
         default=MOLECULE_TYPE_PROTEIN,
     )
     parser.add_argument(

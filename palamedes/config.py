@@ -26,4 +26,6 @@ HGVS_VARIANT_TYPE_DELETION_INSERTION: str = "deletion_insertion"
 
 MOLECULE_TYPE_ANNOTATION_KEY: str = "molecule_type"
 MOLECULE_TYPE_PROTEIN: str = "protein"
+MOLECULE_TYPE_DNA: str = "dna"
 HGVS_TYPE_PROTEIN: str = "p"
+HGVS_TYPE_GENOMIC_DNA: str = "g"

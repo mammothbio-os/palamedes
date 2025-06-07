@@ -5,9 +5,10 @@ from hgvs.edit import (
     AAExt,
     AARefAlt,
     AASub,
+    NARefAlt,
 )
 from hgvs.posedit import PosEdit
-from hgvs.location import Interval, AAPosition
+from hgvs.location import Interval, AAPosition, SimplePosition
 from hgvs.sequencevariant import SequenceVariant
 
 from palamedes.align import get_upstream_reference_sequence
@@ -21,7 +22,9 @@ from palamedes.config import (
     HGVS_VARIANT_TYPE_INSERTION,
     HGVS_VARIANT_TYPE_DELETION_INSERTION,
     HGVS_TYPE_PROTEIN,
+    HGVS_TYPE_GENOMIC_DNA,
     MOLECULE_TYPE_PROTEIN,
+    MOLECULE_TYPE_DNA,
 )
 from palamedes.utils import yield_repeating_substrings, zbho_to_obfc, zb_to_ob, zb_position_to_end_coordinate
 
@@ -262,6 +265,192 @@ class HgvsProteinBuilder:
         )
 
 
+class HgvsGenomicDnaBuilder:
+    def __init__(self, alignment: Alignment) -> None:
+        self._alignment = alignment
+
+    def build(self, variant_block: VariantBlock, hgvs_type: str) -> SequenceVariant:
+        pos_edit_builder_funcs = {
+            HGVS_VARIANT_TYPE_SUBSTITUTION: self._build_substitution,
+            HGVS_VARIANT_TYPE_DELETION: self._build_deletion,
+            HGVS_VARIANT_TYPE_INSERTION: self._build_insertion,
+            HGVS_VARIANT_TYPE_EXTENSION: self._build_extension,
+            HGVS_VARIANT_TYPE_DUPLICATION: self._build_duplication,
+            HGVS_VARIANT_TYPE_REPEAT: self._build_repeat,
+            HGVS_VARIANT_TYPE_DELETION_INSERTION: self._build_deletion_insertion,
+        }
+        pos_edit = pos_edit_builder_funcs[hgvs_type](variant_block)
+
+        return SequenceVariant(ac=self._alignment.target.id, type=HGVS_TYPE_GENOMIC_DNA, posedit=pos_edit)
+
+    def _build_substitution(self, variant_block: VariantBlock) -> PosEdit:
+        """
+        DNA substitution build logic using NARefAlt and SimplePosition.
+        Format: g.123A>T
+        """
+        reference_block = variant_block.reference_blocks[0]
+        alternate_block = variant_block.alternate_blocks[0]
+        start_obfc, end_obfc = zbho_to_obfc(reference_block.start, reference_block.end)
+
+        return PosEdit(
+            pos=Interval(
+                start=SimplePosition(base=start_obfc),
+                end=SimplePosition(base=end_obfc),
+            ),
+            edit=NARefAlt(
+                ref=reference_block.bases,
+                alt=alternate_block.bases,
+            ),
+        )
+
+    def _build_deletion(self, variant_block: VariantBlock) -> PosEdit:
+        """
+        DNA deletion build logic using NARefAlt with alt=None.
+        Format: g.123del or g.123_125del
+        """
+        reference_block = variant_block.reference_blocks[0]
+        start_obfc, end_obfc = zbho_to_obfc(reference_block.start, reference_block.end)
+
+        return PosEdit(
+            pos=Interval(
+                start=SimplePosition(base=start_obfc),
+                end=SimplePosition(base=end_obfc),
+            ),
+            edit=NARefAlt(
+                ref=reference_block.bases,
+                alt=None,
+            ),
+        )
+
+    def _build_insertion(self, variant_block: VariantBlock) -> PosEdit:
+        """
+        DNA insertion build logic. Uses flanking positions.
+        Format: g.123_124insATG
+        """
+        upstream_ref_base_index = variant_block.alignment_block.start - 1
+        ref_flanking_start_position = int(self._alignment.indices[0][upstream_ref_base_index])
+        ref_flanking_end_position = int(self._alignment.indices[0][variant_block.alignment_block.end])
+
+        ref_flanking_start_position_ob = zb_to_ob(ref_flanking_start_position)
+        ref_flanking_end_position_ob = zb_to_ob(ref_flanking_end_position)
+
+        return PosEdit(
+            pos=Interval(
+                start=SimplePosition(base=ref_flanking_start_position_ob),
+                end=SimplePosition(base=ref_flanking_end_position_ob),
+            ),
+            edit=NARefAlt(
+                ref=None,
+                alt=variant_block.alternate_blocks[0].bases,
+            ),
+        )
+
+    def _build_extension(self, variant_block: VariantBlock) -> PosEdit:
+        """
+        DNA extension build logic. For genomic DNA, treat extensions as insertions
+        at the beginning or end of the sequence.
+        """
+        is_start = variant_block.alignment_block.start == 0
+        
+        if is_start:
+            # Extension at start - insert before position 1
+            return PosEdit(
+                pos=Interval(
+                    start=SimplePosition(base=0),
+                    end=SimplePosition(base=1),
+                ),
+                edit=NARefAlt(
+                    ref=None,
+                    alt=variant_block.alternate_blocks[0].bases,
+                ),
+            )
+        else:
+            # Extension at end - insert after last position
+            last_position = len(self._alignment.target.seq)
+            return PosEdit(
+                pos=Interval(
+                    start=SimplePosition(base=last_position),
+                    end=SimplePosition(base=last_position + 1),
+                ),
+                edit=NARefAlt(
+                    ref=None,
+                    alt=variant_block.alternate_blocks[0].bases,
+                ),
+            )
+
+    def _build_duplication(self, variant_block: VariantBlock) -> PosEdit:
+        """
+        DNA duplication build logic using Dup() edit.
+        Format: g.123_125dup
+        """
+        upstream_ref_base_index = variant_block.alignment_block.start - 1
+        ref_duplication_end_position = zb_position_to_end_coordinate(
+            self._alignment.indices[0][upstream_ref_base_index]
+        )
+        ref_duplication_start_position = ref_duplication_end_position - len(variant_block.alternate_blocks[0].bases)
+        ref_duplication_start_position_obfc, ref_duplication_end_position_obfc = zbho_to_obfc(
+            ref_duplication_start_position, ref_duplication_end_position
+        )
+
+        return PosEdit(
+            pos=Interval(
+                start=SimplePosition(base=ref_duplication_start_position_obfc),
+                end=SimplePosition(base=ref_duplication_end_position_obfc),
+            ),
+            edit=Dup(),
+        )
+
+    def _build_repeat(self, variant_block: VariantBlock) -> PosEdit:
+        """
+        DNA repeat build logic using Repeat() edit.
+        Format: g.123_125[6] (for 6 repeats)
+        """
+        largest_upstream_repeat = [
+            substring
+            for substring in yield_repeating_substrings(variant_block.alternate_blocks[0].bases)
+            if get_upstream_reference_sequence(self._alignment, variant_block.alignment_block.start, len(substring))
+            == substring
+        ][-1]
+
+        upstream_ref_base_index = variant_block.alignment_block.start - 1
+        ref_duplication_end_position = zb_position_to_end_coordinate(
+            self._alignment.indices[0][upstream_ref_base_index]
+        )
+        ref_duplication_start_position = ref_duplication_end_position - len(largest_upstream_repeat)
+        start_obfc, end_obfc = zbho_to_obfc(ref_duplication_start_position, ref_duplication_end_position)
+
+        repeat_value = len(variant_block.alternate_blocks[0].bases) // len(largest_upstream_repeat)
+
+        return PosEdit(
+            pos=Interval(
+                start=SimplePosition(base=start_obfc),
+                end=SimplePosition(base=end_obfc),
+            ),
+            edit=Repeat(min=repeat_value, max=repeat_value),
+        )
+
+    def _build_deletion_insertion(self, variant_block: VariantBlock) -> PosEdit:
+        """
+        DNA delins logic using NARefAlt.
+        Format: g.123_125delinsATG
+        """
+        reference_block = variant_block.reference_blocks[0]
+        alternate_block = variant_block.alternate_blocks[0]
+
+        start_obfc, end_obfc = zbho_to_obfc(reference_block.start, reference_block.end)
+        return PosEdit(
+            pos=Interval(
+                start=SimplePosition(base=start_obfc),
+                end=SimplePosition(base=end_obfc),
+            ),
+            edit=NARefAlt(
+                ref=reference_block.bases,
+                alt=alternate_block.bases,
+            ),
+        )
+
+
 BUILDER_CONFIG = {
     MOLECULE_TYPE_PROTEIN: HgvsProteinBuilder,
+    MOLECULE_TYPE_DNA: HgvsGenomicDnaBuilder,
 }
