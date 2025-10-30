@@ -67,7 +67,7 @@ jobs:
         path: dist/
 
     - name: sign
-      uses: sigstore/gh-action-sigstore-python@v2.1.1
+      uses: sigstore/gh-action-sigstore-python@v3.1.0
       with:
         inputs: >-
           ./dist/*.tar.gz
