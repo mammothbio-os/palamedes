@@ -13,6 +13,7 @@ from palamedes.config import (
 )
 
 
+
 class PalamedesBaseCase(TestCase):
     def make_seq_records(
         self, ref_seq: str, alt_seq: str, molecule_type: str = MOLECULE_TYPE_PROTEIN
@@ -22,7 +23,10 @@ class PalamedesBaseCase(TestCase):
         return ref, alt
 
     def make_alignment(self, ref_aligned_bases: str, alt_aligned_bases: str) -> Alignment:
-        coords = Alignment.infer_coordinates([ref_aligned_bases, alt_aligned_bases])
+        _, coords = Alignment.parse_printed_alignment([
+            ref_aligned_bases.encode(),
+            alt_aligned_bases.encode()
+        ])
         ref, alt = self.make_seq_records(
             ref_aligned_bases.replace(ALIGNMENT_GAP_CHAR, ""), alt_aligned_bases.replace(ALIGNMENT_GAP_CHAR, "")
         )

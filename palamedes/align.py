@@ -38,7 +38,8 @@ def reverse_seq_record(seq_record: SeqRecord) -> SeqRecord:
     the best alignment.
     """
     return SeqRecord(
-        Seq(seq_record.seq[::-1]),
+        # mypy ignore non-indexable type - seq_record.seq is never None
+        Seq(seq_record.seq[::-1]), # type: ignore[index]
         id=seq_record.id,
         name=seq_record.name,
         description=seq_record.description,

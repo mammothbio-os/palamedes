@@ -1,5 +1,7 @@
 from Bio.Align import PairwiseAligner, Alignment
 from Bio.SeqRecord import SeqRecord
+# hgvs has a circular import issue, so we need to import Parser first
+from hgvs.parser import Parser  # noqa: F401
 from hgvs.sequencevariant import SequenceVariant
 
 from palamedes.align import generate_seq_record, generate_variant_blocks, reverse_seq_record
@@ -16,8 +18,7 @@ from palamedes.config import (
     REF_SEQUENCE_ID,
 )
 
-__version__ = "0.0.9"
-
+__version__ = "0.0.10"
 
 def generate_hgvs_variants_from_alignment(
     alignment: Alignment, use_non_standard_substitution_rules: bool = False, molecule_type: str = MOLECULE_TYPE_PROTEIN
@@ -150,11 +151,10 @@ def generate_alignment(
 
     # undo the reversal, to recover the "last" highest scoring alignment for the forward
     # which should correspond to the 3' end most alignment and follow HGSV spec
-    # note 'infer_coordinates' will soon be deprecated, update to 'parse_printed_alignment' once its live
-    forward_coordinates = Alignment.infer_coordinates(
+    _, forward_coordinates = Alignment.parse_printed_alignment(
         [
-            reversed_alignment[0][::-1],
-            reversed_alignment[1][::-1],
+            reversed_alignment[0][::-1].encode(),
+            reversed_alignment[1][::-1].encode(),
         ]
     )
     forward_alignment = Alignment(
