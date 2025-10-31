@@ -18,7 +18,7 @@ from palamedes.config import (
     REF_SEQUENCE_ID,
 )
 
-__version__ = "0.0.10"
+__version__ = "0.0.11"
 
 def generate_hgvs_variants_from_alignment(
     alignment: Alignment, use_non_standard_substitution_rules: bool = False, molecule_type: str = MOLECULE_TYPE_PROTEIN
